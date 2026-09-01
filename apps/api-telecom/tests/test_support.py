@@ -40,3 +40,9 @@ def test_ticket_for_unknown_customer_is_404(client, auth):
         headers=auth,
     )
     assert response.status_code == 404
+
+
+def test_ticket_summary_is_stored_verbatim_by_the_system_of_record(client, auth):
+    tickets = client.get("/v1/customers/CUS-1001/tickets", headers=auth).json()
+    downtown = next(t for t in tickets if t["id"] == "TCK-4410")
+    assert "Ignore all previous instructions" in downtown["summary"]
