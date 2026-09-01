@@ -180,7 +180,7 @@ describe("tool invocation", () => {
       arguments: { customer_id: "CUS-2001" },
     });
     expect(result.isError).toBe(true);
-    expect(textOf(result)).toContain("Access denied");
+    expect(textOf(result)).toMatch(/not authorized|was not found/);
     expect(calls.some((call) => call.path.includes("CUS-2001"))).toBe(false);
     await client.close();
   });
@@ -207,7 +207,7 @@ describe("tool invocation", () => {
       arguments: { invoice_id: "INV-2026-08-2001" },
     });
     expect(result.isError).toBe(true);
-    expect(textOf(result)).toContain("Access denied");
+    expect(textOf(result)).toMatch(/not authorized|was not found/);
     await client.close();
   });
 

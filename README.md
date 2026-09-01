@@ -71,11 +71,11 @@ AWS Secrets Manager with credentials obtained through an IAM role.
 
 | Suite | Command | Count |
 |---|---|---|
-| Corporate API | `cd apps/api-telecom && .venv/bin/python -m pytest` | 22 |
-| MCP Server | `cd apps/mcp-server && npm test` | 50 |
-| Agent | `cd apps/agent && .venv/bin/python -m pytest` | 28 |
+| Corporate API | `cd apps/api-telecom && .venv/bin/python -m pytest` | 25 |
+| MCP Server | `cd apps/mcp-server && npm test` | 62 |
+| Agent | `cd apps/agent && .venv/bin/python -m pytest` | 31 |
 | Gateway | `cd apps/bff && npm test` | 29 |
-| Web | `cd apps/web && npm test` | 32 |
+| Web | `cd apps/web && npm test` | 33 |
 
 End-to-end without mocks, against a running stack:
 

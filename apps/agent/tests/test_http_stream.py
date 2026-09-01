@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 
 from sinal_agent.main import create_app
 from sinal_agent.service import BudgetExceededError
+from tests.conftest import mint_token
 
 
 class ExplodingService:
@@ -38,8 +39,12 @@ def test_health(client):
     assert client.get("/health").json()["status"] == "ok"
 
 
+def test_diagnostics_requires_authentication(client):
+    assert client.get("/v1/diagnostics").status_code == 401
+
+
 def test_diagnostics_exposes_prompt_and_model_without_secrets(client):
-    body = client.get("/v1/diagnostics").json()
+    body = client.get("/v1/diagnostics", headers={"authorization": f"Bearer {mint_token()}"}).json()
     assert body["prompt_version"] == "v1"
     assert body["provider"] == "scripted"
     assert "anthropic_api_key" not in body
@@ -74,7 +79,7 @@ def test_stream_emits_the_full_event_sequence(client):
     response = client.post(
         "/v1/chat/stream",
         json={"message": "I want to see my invoice", "session_id": "sess-000001"},
-        headers={"authorization": "Bearer end-user-token", "x-correlation-id": "corr-http"},
+        headers={"authorization": f"Bearer {mint_token()}", "x-correlation-id": "corr-http"},
     )
     assert response.status_code == 200
     assert response.headers["x-correlation-id"] == "corr-http"
@@ -95,7 +100,7 @@ def test_budget_error_closes_the_stream_cleanly():
     response = client.post(
         "/v1/chat/stream",
         json={"message": "hello", "session_id": "sess-000002"},
-        headers={"authorization": "Bearer t"},
+        headers={"authorization": f"Bearer {mint_token()}"},
     )
     events = parse_sse(response.text)
     assert events[-1][0] == "done"
@@ -109,9 +114,34 @@ def test_unexpected_failure_does_not_leak_details():
     response = client.post(
         "/v1/chat/stream",
         json={"message": "hello", "session_id": "sess-000003"},
-        headers={"authorization": "Bearer t"},
+        headers={"authorization": f"Bearer {mint_token()}"},
     )
     events = parse_sse(response.text)
     error = next(data for name, data in events if name == "error")
     assert error["code"] == "agent_failure"
     assert "10.0.0.5" not in json.dumps(events)
+
+
+def test_stream_rejects_an_invalid_bearer_token(client):
+    response = client.post(
+        "/v1/chat/stream",
+        json={"message": "hello", "session_id": "sess-000009"},
+        headers={"authorization": "Bearer not-a-real-jwt"},
+    )
+    assert response.status_code == 401
+
+
+def test_subject_comes_from_the_token_not_the_body(service):
+    from sinal_agent.main import create_app
+
+    local = TestClient(create_app(service))
+    token = mint_token(subject="user-real")
+    payload = {
+        "message": "which plans do you have",
+        "session_id": "sess-subj",
+        "subject": "user-forged",
+    }
+    local.post("/v1/chat/stream", json=payload, headers={"authorization": f"Bearer {token}"})
+    session = service.sessions.get("sess-subj", "user-real")
+    assert session.messages != []
+    assert service.sessions.get("sess-subj", "user-forged").messages == []

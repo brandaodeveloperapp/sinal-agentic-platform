@@ -5,6 +5,8 @@ identity is carried separately so the caller can be audited without the API
 making authorization decisions on the agent's behalf.
 """
 
+import hmac
+
 from fastapi import Header, HTTPException, status
 
 from sinal_api.config import get_settings
@@ -19,7 +21,9 @@ async def require_workload_credential(
 ) -> str:
     """Validate the calling workload and return the audited acting user."""
     settings = get_settings()
-    if not x_api_key or x_api_key not in settings.allowed_api_keys:
+    presented = x_api_key or ""
+    accepted = any(hmac.compare_digest(presented, allowed) for allowed in settings.allowed_api_keys)
+    if not accepted:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="invalid or missing workload credential",

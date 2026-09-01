@@ -49,6 +49,10 @@ export class TelecomClient {
   async request<T>(request: RequestOptions): Promise<T> {
     this.options.breaker.assertClosed();
 
+    if (request.path.split("/").some((segment) => segment === "." || segment === "..")) {
+      throw new UpstreamError("rejected a path with relative segments", 400, false, 1);
+    }
+
     const url = new URL(request.path, this.options.baseUrl);
     for (const [key, value] of Object.entries(request.query ?? {})) {
       if (value !== undefined) url.searchParams.set(key, value);
@@ -77,7 +81,8 @@ export class TelecomClient {
           return (await response.json()) as T;
         }
 
-        const retryable = RETRYABLE_STATUSES.has(response.status);
+        const retryable =
+          RETRYABLE_STATUSES.has(response.status) && (request.method ?? "GET") !== "POST";
         lastError = new UpstreamError(
           await this.describe(response),
           response.status,
@@ -112,13 +117,15 @@ export class TelecomClient {
           throw error;
         } else {
           const isAbort = error instanceof Error && error.name === "AbortError";
+          const postRetryable = (request.method ?? "GET") !== "POST";
           lastError = new UpstreamError(
             isAbort ? `upstream timed out after ${this.options.timeoutMs}ms` : String(error),
             isAbort ? 504 : 502,
-            true,
+            postRetryable,
             attempt,
           );
           this.options.breaker.recordFailure();
+          if (!postRetryable) throw lastError;
           this.options.logger.warn(
             { upstream_path: request.path, attempt, reason: lastError.message },
             "upstream_call_errored",

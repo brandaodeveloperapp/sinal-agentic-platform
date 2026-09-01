@@ -106,3 +106,10 @@ describe("line endings", () => {
     expect(frames[0]?.data).toMatchObject({ latency_ms: 42, usage: { total_tokens: 246 } });
   });
 });
+
+describe("buffer bounds", () => {
+  it("throws instead of growing without bound when no separator ever arrives", () => {
+    const parser = new SseParser();
+    expect(() => parser.push("x".repeat(1_000_001))).toThrow(/maximum buffer/);
+  });
+});

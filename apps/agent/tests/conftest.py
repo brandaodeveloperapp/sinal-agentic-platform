@@ -3,6 +3,7 @@ import os
 from collections.abc import Iterator
 from typing import Any
 
+import jwt
 import pytest
 from strands import tool
 
@@ -97,3 +98,24 @@ async def collect(service: AgentService, message: str, **overrides: Any) -> list
     }
     params.update(overrides)
     return [event async for event in service.stream_turn(**params)]
+
+
+def mint_token(
+    subject: str = "user-1", customer_id: str | None = "CUS-1001", scope: str = "billing:read"
+) -> str:
+    import time
+
+    now = int(time.time())
+    return jwt.encode(
+        {
+            "iss": "https://sinal.local/idp",
+            "aud": "sinal-mcp",
+            "sub": subject,
+            "customer_id": customer_id,
+            "scope": scope,
+            "iat": now,
+            "exp": now + 300,
+        },
+        "dev-only-signing-secret-change-me",
+        algorithm="HS256",
+    )

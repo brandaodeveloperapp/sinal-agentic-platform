@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
 
 from sinal_agent import __version__
+from sinal_agent.auth import TokenError, verify_bearer
 from sinal_agent.config import get_settings
 from sinal_agent.models import describe_model
 from sinal_agent.observability import (
@@ -28,7 +29,6 @@ logger = logging.getLogger("sinal.agent.http")
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
     session_id: str = Field(min_length=6, max_length=128)
-    subject: str = Field(default="unknown", max_length=128)
 
 
 def create_app(service: AgentService | None = None) -> FastAPI:
@@ -52,7 +52,13 @@ def create_app(service: AgentService | None = None) -> FastAPI:
         return {"status": "ok", "version": __version__}
 
     @app.get("/v1/diagnostics", tags=["ops"])
-    async def diagnostics() -> dict[str, object]:
+    async def diagnostics(authorization: str | None = Header(default=None)) -> dict[str, object]:
+        try:
+            verify_bearer(authorization, settings)
+        except TokenError as error:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="authentication required"
+            ) from error
         return {
             "prompt_version": settings.prompt_version,
             "max_tool_calls_per_turn": settings.max_tool_calls_per_turn,
@@ -67,11 +73,13 @@ def create_app(service: AgentService | None = None) -> FastAPI:
         authorization: str | None = Header(default=None),
         x_correlation_id: str | None = Header(default=None, alias=CORRELATION_HEADER),
     ) -> EventSourceResponse:
-        if not authorization or not authorization.startswith("Bearer "):
+        try:
+            caller = verify_bearer(authorization, settings)
+        except TokenError as error:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="an end user bearer token is required",
-            )
+                detail="a valid end user bearer token is required",
+            ) from error
 
         correlation_id = x_correlation_id or new_correlation_id()
         CORRELATION_ID.set(correlation_id)
@@ -85,7 +93,7 @@ def create_app(service: AgentService | None = None) -> FastAPI:
                     message=payload.message,
                     token=token,
                     session_id=payload.session_id,
-                    subject=payload.subject,
+                    subject=caller.subject,
                     correlation_id=correlation_id,
                 ):
                     yield {"event": event["event"], "data": json.dumps(event["data"])}

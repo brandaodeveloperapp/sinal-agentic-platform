@@ -28,4 +28,9 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    settings = Settings()
+    if settings.environment != "dev" and "dev-mcp-server-key" in settings.allowed_api_keys:
+        raise RuntimeError(
+            f"API_KEYS still holds its development default while ENVIRONMENT={settings.environment}"
+        )
+    return settings

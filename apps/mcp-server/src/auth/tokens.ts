@@ -58,6 +58,8 @@ export class TokenVerifier {
         issuer: this.options.issuer,
         audience: this.options.audience,
         algorithms: ["HS256"],
+        requiredClaims: ["exp", "iat"],
+        maxTokenAge: "30m",
       }));
     } catch (error) {
       throw new AuthenticationError(

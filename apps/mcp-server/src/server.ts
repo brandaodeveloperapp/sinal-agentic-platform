@@ -128,12 +128,20 @@ interface FailureDescription {
   message: string;
 }
 
+const NOT_FOUND_MESSAGE = "That record was not found for this account.";
+
 export function describeFailure(error: unknown): FailureDescription {
   if (error instanceof ToolAuthorizationError) {
+    // A resource the caller does not own is reported exactly like one that does not
+    // exist, so a denial cannot be used as an existence oracle. The specific code and
+    // reason stay in the logs (server.ts logs error_code), never in the caller text.
+    if (error.code === "resource_not_owned") {
+      return { outcome: "denied", code: error.code, message: NOT_FOUND_MESSAGE };
+    }
     return {
       outcome: "denied",
       code: error.code,
-      message: `Access denied: ${error.message}`,
+      message: "You are not authorized for that action.",
     };
   }
   if (error instanceof CircuitOpenError) {
@@ -146,12 +154,14 @@ export function describeFailure(error: unknown): FailureDescription {
     };
   }
   if (error instanceof UpstreamError) {
+    // Upstream detail (status text, internal message) is never echoed to the model;
+    // it is logged instead. The caller sees a fixed, safe string per class.
     const message =
       error.status === 404
-        ? `Record not found: ${error.message}`
+        ? NOT_FOUND_MESSAGE
         : error.status === 504
           ? "The corporate system took too long to respond. No data was changed."
-          : `Failed to reach the corporate system (${error.status}). No data was changed.`;
+          : "The corporate system could not complete the request. No data was changed.";
     return { outcome: "upstream_error", code: `upstream_${error.status}`, message };
   }
   return {

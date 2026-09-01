@@ -19,6 +19,10 @@ const app = createApp({
     windowMs: config.RATE_LIMIT_WINDOW_MS,
     maxRequests: config.RATE_LIMIT_MAX_REQUESTS,
   }),
+  loginLimiter: new RateLimiter({
+    windowMs: config.LOGIN_RATE_LIMIT_WINDOW_MS,
+    maxRequests: config.LOGIN_RATE_LIMIT_MAX_ATTEMPTS,
+  }),
 });
 
 const server = app.listen(config.PORT, () => {

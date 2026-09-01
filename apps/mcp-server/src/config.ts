@@ -21,11 +21,24 @@ const schema = z.object({
 
 export type Config = z.infer<typeof schema>;
 
+const DEV_DEFAULTS: Record<string, string> = {
+  JWT_SIGNING_SECRET: "dev-only-signing-secret-change-me",
+  API_TELECOM_KEY: "dev-mcp-server-key",
+};
+
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const parsed = schema.safeParse(env);
   if (!parsed.success) {
     const issues = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
     throw new Error(`invalid configuration: ${issues}`);
   }
-  return parsed.data;
+  const config = parsed.data;
+  if (config.ENVIRONMENT !== "dev") {
+    for (const [name, devValue] of Object.entries(DEV_DEFAULTS)) {
+      if (config[name as keyof Config] === devValue) {
+        throw new Error(`${name} still holds its development default while ENVIRONMENT=${config.ENVIRONMENT}`);
+      }
+    }
+  }
+  return config;
 }

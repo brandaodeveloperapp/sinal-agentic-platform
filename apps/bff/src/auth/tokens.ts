@@ -70,6 +70,7 @@ export class TokenService {
         issuer: this.config.SESSION_ISSUER,
         audience: this.config.SESSION_AUDIENCE,
         algorithms: ["HS256"],
+        requiredClaims: ["exp", "iat"],
       }));
     } catch (error) {
       throw new SessionError(

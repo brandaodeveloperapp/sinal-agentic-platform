@@ -59,6 +59,7 @@ function buildApp(fetchImpl: typeof fetch) {
     tokens: new TokenService(config),
     streamer: new AgentStreamer({ config, logger, fetchImpl }),
     limiter,
+    loginLimiter: new RateLimiter({ windowMs: 60000, maxRequests: 5 }),
   });
 }
 
@@ -409,5 +410,96 @@ describe("logging", () => {
     await login("marina", "a-very-secret-password");
     spy.mockRestore();
     expect(lines.join("")).not.toContain("a-very-secret-password");
+  });
+});
+
+describe("hardening regressions", () => {
+  it("rate limits repeated login attempts before the KDF", async () => {
+    let blocked = false;
+    for (let i = 0; i < 8; i += 1) {
+      const r = await login("marina", "wrong-password");
+      if (r.status === 429) {
+        blocked = true;
+        break;
+      }
+    }
+    expect(blocked).toBe(true);
+  });
+
+  it("replaces a malformed correlation id instead of reflecting it", async () => {
+    const response = await fetch(`${baseUrl}/health`, {
+      headers: { "x-correlation-id": "bad id with spaces & <b>" },
+    });
+    const echoed = response.headers.get("x-correlation-id") ?? "";
+    expect(echoed).not.toContain("<b>");
+    expect(echoed).toMatch(/^[A-Za-z0-9._-]{1,128}$/);
+  });
+
+  it("sets defensive response headers", async () => {
+    const response = await fetch(`${baseUrl}/health`);
+    expect(response.headers.get("x-frame-options")).toBe("DENY");
+    expect(response.headers.get("content-security-policy")).toContain("frame-ancestors 'none'");
+  });
+
+  it("returns generic JSON, not an HTML stack trace, on malformed body", async () => {
+    const response = await fetch(`${baseUrl}/v1/auth/login`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "{ not json",
+    });
+    expect(response.status).toBeGreaterThanOrEqual(400);
+    const text = await response.text();
+    expect(text).not.toContain("SyntaxError");
+    expect(text).not.toContain("at JSON.parse");
+  });
+
+  it("refuses a chat request whose subject no longer exists in the directory", async () => {
+    const orphan = await new TokenService(config).issueSession({
+      username: "ghost",
+      subject: "user-ghost",
+      displayName: "Ghost",
+      actor: "subscriber",
+      scopes: ["billing:read"],
+    });
+    const response = await fetch(`${baseUrl}/v1/chat/stream`, {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${orphan}` },
+      body: JSON.stringify({ message: "hi", session_id: "sess-orphan" }),
+    });
+    expect(response.status).toBe(401);
+  });
+
+  it("refuses a session token that carries no exp", async () => {
+    const { SignJWT } = await import("jose");
+    const noExp = await new SignJWT({ scope: "billing:read", actor: "subscriber" })
+      .setProtectedHeader({ alg: "HS256" })
+      .setSubject("user-marina")
+      .setIssuer(config.SESSION_ISSUER)
+      .setAudience(config.SESSION_AUDIENCE)
+      .setIssuedAt()
+      .sign(new TextEncoder().encode(config.SESSION_SECRET));
+    const response = await fetch(`${baseUrl}/v1/auth/me`, {
+      headers: { authorization: `Bearer ${noExp}` },
+    });
+    expect(response.status).toBe(401);
+  });
+});
+
+describe("config guards widen to hom", () => {
+  it("rejects dev defaults in hom, not only prd", () => {
+    expect(() => loadConfig({ ENVIRONMENT: "hom" } as unknown as NodeJS.ProcessEnv)).toThrow(
+      /development default/,
+    );
+  });
+
+  it("rejects identical session and downstream secrets outside dev", () => {
+    expect(() =>
+      loadConfig({
+        ENVIRONMENT: "prd",
+        SESSION_SECRET: "same-secret-value-for-both-here",
+        DOWNSTREAM_SECRET: "same-secret-value-for-both-here",
+        DEMO_PASSWORD: "a-real-password",
+      } as unknown as NodeJS.ProcessEnv),
+    ).toThrow(/must differ/);
   });
 });

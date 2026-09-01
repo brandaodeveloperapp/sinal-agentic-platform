@@ -11,6 +11,8 @@ export interface SseFrame {
  * framed by hand. Chunk boundaries never align with frame boundaries, so the parser
  * keeps a buffer and only emits complete frames.
  */
+const MAX_BUFFER = 1_000_000;
+
 export class SseParser {
   private buffer = "";
 
@@ -18,6 +20,9 @@ export class SseParser {
     // Servers disagree on line endings: sse_starlette emits CRLF while others emit
     // LF. Normalizing on the way in keeps frame separation independent of that.
     this.buffer += chunk.replace(/\r\n/g, "\n");
+    if (this.buffer.length > MAX_BUFFER) {
+      throw new Error("sse frame exceeded the maximum buffer size");
+    }
     const frames: SseFrame[] = [];
 
     let separator = this.buffer.indexOf("\n\n");

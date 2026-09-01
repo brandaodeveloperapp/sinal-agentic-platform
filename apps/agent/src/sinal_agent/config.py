@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     aws_region: str = "us-east-1"
     anthropic_api_key: str = ""
 
+    jwt_issuer: str = "https://sinal.local/idp"
+    jwt_audience: str = "sinal-mcp"
+    downstream_secret: str = "dev-only-signing-secret-change-me"  # noqa: S105
+
     mcp_server_url: str = "http://localhost:8082/mcp"
     mcp_startup_timeout_s: int = 15
 

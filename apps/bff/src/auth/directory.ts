@@ -81,6 +81,10 @@ export class Directory {
     }
   }
 
+  findBySubject(subject: string): DirectoryUser | undefined {
+    return this.users.find((candidate) => candidate.subject === subject);
+  }
+
   async authenticate(username: string, password: string): Promise<DirectoryUser | null> {
     await this.ready;
     const user = this.users.find((candidate) => candidate.username === username);

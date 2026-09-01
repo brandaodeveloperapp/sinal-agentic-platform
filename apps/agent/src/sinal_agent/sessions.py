@@ -21,9 +21,10 @@ class Session:
 class SessionStore:
     """In-memory store with a bounded history window and a TTL."""
 
-    def __init__(self, ttl_s: int, max_messages: int) -> None:
+    def __init__(self, ttl_s: int, max_messages: int, max_sessions: int = 5000) -> None:
         self.ttl_s = ttl_s
         self.max_messages = max_messages
+        self.max_sessions = max_sessions
         self._sessions: dict[str, Session] = {}
 
     def get(self, session_id: str, subject: str) -> Session:
@@ -32,7 +33,13 @@ class SessionStore:
         if session is None or session.subject != subject:
             session = Session(session_id=session_id, subject=subject)
             self._sessions[session_id] = session
+            self._enforce_cap()
         return session
+
+    def _enforce_cap(self) -> None:
+        while len(self._sessions) > self.max_sessions:
+            oldest = min(self._sessions.values(), key=lambda s: s.updated_at)
+            del self._sessions[oldest.session_id]
 
     def save(self, session: Session, messages: list[dict[str, Any]]) -> None:
         session.messages = messages[-self.max_messages :]

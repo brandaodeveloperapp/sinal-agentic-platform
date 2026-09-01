@@ -1,12 +1,13 @@
 import { z } from "zod";
 
 import { assertOwnership, resolveCustomerId } from "../auth/policy.js";
-import { maskEmail, sanitizeUntrustedText } from "../redaction.js";
+import { maskDocument, maskEmail, sanitizeUntrustedText } from "../redaction.js";
 import type { ToolDefinition } from "./types.js";
 
 const customerIdArg = {
   customer_id: z
     .string()
+    .regex(/^CUS-\d+$/, "customer_id must look like CUS-000")
     .optional()
     .describe(
       "Customer identifier. Omit it to use the customer bound to the caller token. " +
@@ -98,9 +99,17 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         path: `/v1/customers/${encodeURIComponent(customerId)}`,
         actingUser: caller.subject,
       });
+      const safeName = sanitizeUntrustedText(customer.full_name, 120);
       return {
-        summary: `Customer ${customer.full_name}, segment ${customer.segment}.`,
-        data: { customer: { ...customer, email: maskEmail(customer.email) } },
+        summary: `Customer ${safeName}, segment ${customer.segment}.`,
+        data: {
+          customer: {
+            ...customer,
+            full_name: safeName,
+            document: maskDocument(customer.document),
+            email: maskEmail(customer.email),
+          },
+        },
       };
     },
   },
@@ -128,7 +137,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     description:
       "Returns the current cycle usage for a line. The line must belong to the authorized customer.",
     inputSchema: {
-      msisdn: z.string().min(10).max(15).describe("Line number in E.164 without the plus sign"),
+      msisdn: z.string().regex(/^\d{10,15}$/, "msisdn must be 10-15 digits").describe("Line number in E.164 without the plus sign"),
       ...customerIdArg,
     },
     readOnly: true,
@@ -187,7 +196,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     title: "Get invoice details",
     description: "Returns one invoice. The invoice must belong to the authorized customer.",
     inputSchema: {
-      invoice_id: z.string().min(3).describe("Invoice identifier"),
+      invoice_id: z.string().regex(/^INV-[\w-]+$/, "invoice_id must look like INV-...").describe("Invoice identifier"),
       ...customerIdArg,
     },
     readOnly: true,
@@ -271,7 +280,10 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       });
       return {
         summary: `Ticket ${ticket.id} opened under category ${ticket.category}.`,
-        data: { status: "created", ticket },
+        data: {
+          status: "created",
+          ticket: { ...ticket, summary: sanitizeUntrustedText(ticket.summary, 280) },
+        },
       };
     },
   },

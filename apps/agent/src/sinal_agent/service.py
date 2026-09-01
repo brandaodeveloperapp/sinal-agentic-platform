@@ -140,7 +140,9 @@ class AgentService:
                     yield {"event": "token", "data": {"text": text}}
 
                 current_tool = event.get("current_tool_use") or {}
-                tool_use_id = current_tool.get("toolUseId")
+                tool_use_id = current_tool.get("toolUseId") or (
+                    f"pos-{len(announced)}" if current_tool.get("name") else None
+                )
                 if tool_use_id and tool_use_id not in announced:
                     announced.add(tool_use_id)
                     tool_calls += 1

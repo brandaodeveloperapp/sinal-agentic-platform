@@ -32,6 +32,7 @@ export interface AppDeps {
   tokens: TokenService;
   streamer: AgentStreamer;
   limiter: RateLimiter;
+  loginLimiter: RateLimiter;
 }
 
 declare module "express-serve-static-core" {
@@ -55,11 +56,20 @@ export function createApp(deps: AppDeps): Express {
   );
 
   app.use((req: Request, res: Response, next: NextFunction) => {
-    const correlationId = (req.header(CORRELATION_HEADER) ?? newCorrelationId()).slice(0, 128);
+    // A client-supplied correlation id is echoed into a response header and forwarded
+    // to two upstreams, so it is constrained to a safe charset; anything else is
+    // replaced with a fresh id rather than trusted.
+    const supplied = req.header(CORRELATION_HEADER) ?? "";
+    const correlationId = /^[A-Za-z0-9._-]{1,128}$/.test(supplied) ? supplied : newCorrelationId();
+    const suppliedSession = req.header(SESSION_HEADER) ?? "";
+    const sessionId = /^[A-Za-z0-9._-]{1,128}$/.test(suppliedSession) ? suppliedSession : "";
     req.correlationId = correlationId;
     res.setHeader(CORRELATION_HEADER, correlationId);
     res.setHeader("x-content-type-options", "nosniff");
-    runWithContext({ correlationId, sessionId: req.header(SESSION_HEADER) ?? "" }, () => next());
+    res.setHeader("x-frame-options", "DENY");
+    res.setHeader("referrer-policy", "no-referrer");
+    res.setHeader("content-security-policy", "default-src 'none'; frame-ancestors 'none'");
+    runWithContext({ correlationId, sessionId }, () => next());
   });
 
   app.get("/health", (_req, res) => {
@@ -70,6 +80,17 @@ export function createApp(deps: AppDeps): Express {
     const parsed = loginSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ code: "invalid_payload", message: "username and password required" });
+      return;
+    }
+
+    // Login is rate limited before the KDF runs, keyed by client IP and username, so
+    // it is neither a credential brute-force surface nor an unauthenticated scrypt DoS.
+    const loginKey = `${clientIp(req)}:${parsed.data.username}`;
+    const loginVerdict = deps.loginLimiter.check(loginKey);
+    if (!loginVerdict.allowed) {
+      deps.logger.warn({ username: parsed.data.username }, "login_rate_limited");
+      res.setHeader("retry-after", String(Math.ceil(loginVerdict.retryAfterMs / 1000)));
+      res.status(429).json({ code: "rate_limited", message: "too many attempts" });
       return;
     }
 
@@ -124,7 +145,25 @@ export function createApp(deps: AppDeps): Express {
       return;
     }
 
-    const identity = req.identity as SessionIdentity;
+    const sessionIdentity = req.identity as SessionIdentity;
+
+    // Re-resolve the caller's current scopes and customer binding from the directory
+    // at exchange time. A privilege change (or a removed account) takes effect on the
+    // next request instead of living on inside a still-valid session token.
+    const current = deps.directory.findBySubject(sessionIdentity.subject);
+    if (!current) {
+      deps.logger.warn({ subject: sessionIdentity.subject }, "subject_no_longer_exists");
+      res.status(401).json({ code: "unauthorized", message: "authentication required" });
+      return;
+    }
+    const identity: SessionIdentity = {
+      subject: current.subject,
+      displayName: current.displayName,
+      actor: current.actor,
+      customerId: current.customerId,
+      scopes: current.scopes,
+    };
+
     const verdict = deps.limiter.check(identity.subject);
     res.setHeader("x-ratelimit-remaining", String(verdict.remaining));
     if (!verdict.allowed) {
@@ -147,5 +186,26 @@ export function createApp(deps: AppDeps): Express {
     );
   });
 
+  // Terminal handler: a body-parser or unexpected error becomes a generic JSON
+  // response, never Express's default HTML stack trace.
+  app.use((error: Error & { status?: number; type?: string }, req: Request, res: Response, next: NextFunction) => {
+    if (res.headersSent) {
+      next(error);
+      return;
+    }
+    const status = error.type === "entity.too.large" ? 413 : (error.status ?? 400);
+    deps.logger.warn({ reason: error.type ?? error.name }, "request_failed");
+    res.status(status >= 400 && status < 600 ? status : 500).json({
+      code: "bad_request",
+      message: "The request could not be processed.",
+    });
+  });
+
   return app;
+}
+
+function clientIp(req: Request): string {
+  const forwarded = req.header("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0]?.trim() ?? "unknown";
+  return req.socket.remoteAddress ?? "unknown";
 }
