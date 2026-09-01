@@ -65,6 +65,14 @@ is verified live: a chat flood hits the shared 20-request ceiling across both BF
 sees the conversation. Redis accepts traffic only from the BFF and the agent
 (NetworkPolicy). On AWS this is ElastiCache.
 
+## Autoscaling
+
+Now that the rate limit and session state are shared through Redis, adding replicas is
+safe, so each service scales on load. In k3s a **HorizontalPodAutoscaler** tracks CPU
+(BFF 2–6, agent 2–8, MCP 1–4) against metrics-server; on AWS the same intent is **ECS
+Service Auto Scaling** with target-tracking CPU policies, declared in
+`infra/terraform/autoscaling.tf`. The floors and ceilings match across both.
+
 ## Environments
 
 `dev` / `hom` / `prd` are segregated. Every service refuses to boot outside `dev` while

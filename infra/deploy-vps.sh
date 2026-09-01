@@ -56,6 +56,7 @@ kubectl apply -f "${SRC}/infra/k8s/agent.yaml"
 kubectl apply -f "${SRC}/infra/k8s/bff.yaml"
 kubectl apply -f "${SRC}/infra/k8s/web.yaml"
 kubectl apply -f "${SRC}/infra/k8s/network-policy.yaml"
+kubectl apply -f "${SRC}/infra/k8s/hpa.yaml"
 
 log "rollout"
 for dep in api-telecom mcp-server agent bff web; do
