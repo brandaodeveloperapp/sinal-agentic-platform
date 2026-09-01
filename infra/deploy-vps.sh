@@ -49,6 +49,7 @@ for svc in api-telecom mcp-server agent bff web; do
 done
 
 log "apply manifests"
+kubectl apply -f "${SRC}/infra/k8s/redis.yaml"
 kubectl apply -f "${SRC}/infra/k8s/api-telecom.yaml"
 kubectl apply -f "${SRC}/infra/k8s/mcp-server.yaml"
 kubectl apply -f "${SRC}/infra/k8s/agent.yaml"

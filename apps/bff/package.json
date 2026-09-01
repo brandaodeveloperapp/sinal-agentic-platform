@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "description": "Edge gateway: authenticates the end user and streams the agent answer",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
@@ -18,7 +20,8 @@
     "express": "^4.21.2",
     "jose": "^5.9.6",
     "pino": "^9.5.0",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "ioredis": "^5.4.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",

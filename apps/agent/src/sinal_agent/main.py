@@ -26,6 +26,23 @@ from sinal_agent.sessions import SessionStore
 logger = logging.getLogger("sinal.agent.http")
 
 
+def _build_sessions(settings):
+    """Redis-backed sessions when a URL is set, so history is shared across replicas;
+    the in-memory LRU otherwise (correct for a single replica, the local default)."""
+    if settings.redis_url:
+        import redis as redis_lib
+
+        from sinal_agent.redis_sessions import RedisSessionStore
+
+        client = redis_lib.Redis.from_url(settings.redis_url, decode_responses=True)
+        logger.info("sessions_backend", extra={"store": "redis"})
+        return RedisSessionStore(
+            client, settings.session_ttl_s, settings.max_history_messages
+        )
+    logger.info("sessions_backend", extra={"store": "memory"})
+    return SessionStore(settings.session_ttl_s, settings.max_history_messages)
+
+
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
     session_id: str = Field(min_length=6, max_length=128)
@@ -44,7 +61,7 @@ def create_app(service: AgentService | None = None) -> FastAPI:
     app = FastAPI(title="Sinal Agent", version=__version__, lifespan=lifespan)
     app.state.service = service or AgentService(
         settings=settings,
-        sessions=SessionStore(settings.session_ttl_s, settings.max_history_messages),
+        sessions=_build_sessions(settings),
     )
 
     @app.get("/health", tags=["ops"])

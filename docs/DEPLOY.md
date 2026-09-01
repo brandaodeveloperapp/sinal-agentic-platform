@@ -54,6 +54,17 @@ The network isolation is not just described in both — it is *verified* in both
 NetworkPolicy is proven in-cluster (a probe from another namespace cannot reach the
 API), and the security-group chain is declared in Terraform.
 
+## Shared state for horizontal scale
+
+The gateway rate limiter and the agent session store are backed by **Redis** when
+`REDIS_URL` is set, so the budget and the conversation history are shared across every
+replica; without it each falls back to a correct single-replica in-memory store. In
+the cluster the BFF and the agent run **two replicas each** against one Redis, and it
+is verified live: a chat flood hits the shared 20-request ceiling across both BFF pods
+(20 allowed, the rest 429), and a follow-up turn served by a different agent pod still
+sees the conversation. Redis accepts traffic only from the BFF and the agent
+(NetworkPolicy). On AWS this is ElastiCache.
+
 ## Environments
 
 `dev` / `hom` / `prd` are segregated. Every service refuses to boot outside `dev` while

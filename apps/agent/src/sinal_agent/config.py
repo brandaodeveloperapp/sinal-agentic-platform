@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     jwt_audience: str = "sinal-mcp"
     downstream_secret: str = "dev-only-signing-secret-change-me"  # noqa: S105
 
+    redis_url: str = ""
+
     mcp_server_url: str = "http://localhost:8082/mcp"
     mcp_startup_timeout_s: int = 15
 

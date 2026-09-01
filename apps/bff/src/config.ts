@@ -27,6 +27,7 @@ const schema = z.object({
   LOGIN_RATE_LIMIT_MAX_ATTEMPTS: z.coerce.number().default(8),
 
   CORS_ORIGINS: z.string().default("http://localhost:5173"),
+  REDIS_URL: z.string().default(""),
 });
 
 export type Config = z.infer<typeof schema>;

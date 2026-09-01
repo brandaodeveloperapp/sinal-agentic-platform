@@ -7,7 +7,7 @@ metadata:
     app.kubernetes.io/name: agent
     app.kubernetes.io/part-of: sinal
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app.kubernetes.io/name: agent
@@ -42,6 +42,8 @@ spec:
               value: https://sinal.local/idp
             - name: JWT_AUDIENCE
               value: sinal-mcp
+            - name: REDIS_URL
+              value: redis://sinal-redis.sinal.svc.cluster.local:6379
             - name: DOWNSTREAM_SECRET
               valueFrom:
                 secretKeyRef:

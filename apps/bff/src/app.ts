@@ -13,7 +13,7 @@ import {
   type Logger,
 } from "./logger.js";
 import type { AgentStreamer } from "./proxy/agentStream.js";
-import type { RateLimiter } from "./rateLimit.js";
+import type { RateLimiterLike } from "./rateLimit.js";
 
 const loginSchema = z.object({
   username: z.string().min(1).max(64),
@@ -31,8 +31,8 @@ export interface AppDeps {
   directory: Directory;
   tokens: TokenService;
   streamer: AgentStreamer;
-  limiter: RateLimiter;
-  loginLimiter: RateLimiter;
+  limiter: RateLimiterLike;
+  loginLimiter: RateLimiterLike;
 }
 
 declare module "express-serve-static-core" {
@@ -86,7 +86,7 @@ export function createApp(deps: AppDeps): Express {
     // Login is rate limited before the KDF runs, keyed by client IP and username, so
     // it is neither a credential brute-force surface nor an unauthenticated scrypt DoS.
     const loginKey = `${clientIp(req)}:${parsed.data.username}`;
-    const loginVerdict = deps.loginLimiter.check(loginKey);
+    const loginVerdict = await deps.loginLimiter.check(loginKey);
     if (!loginVerdict.allowed) {
       deps.logger.warn({ username: parsed.data.username }, "login_rate_limited");
       res.setHeader("retry-after", String(Math.ceil(loginVerdict.retryAfterMs / 1000)));
@@ -164,7 +164,7 @@ export function createApp(deps: AppDeps): Express {
       scopes: current.scopes,
     };
 
-    const verdict = deps.limiter.check(identity.subject);
+    const verdict = await deps.limiter.check(identity.subject);
     res.setHeader("x-ratelimit-remaining", String(verdict.remaining));
     if (!verdict.allowed) {
       deps.logger.warn({ subject: identity.subject }, "rate_limited");

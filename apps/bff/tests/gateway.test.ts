@@ -503,3 +503,49 @@ describe("config guards widen to hom", () => {
     ).toThrow(/must differ/);
   });
 });
+
+describe("RedisRateLimiter", () => {
+  class FakeRedis {
+    store = new Map<string, { count: number; expireAt: number }>();
+    now = 0;
+    async incr(key: string): Promise<number> {
+      const e = this.store.get(key);
+      if (!e || e.expireAt <= this.now) {
+        this.store.set(key, { count: 1, expireAt: Number.POSITIVE_INFINITY });
+        return 1;
+      }
+      e.count += 1;
+      return e.count;
+    }
+    async pexpire(key: string, ms: number): Promise<number> {
+      const e = this.store.get(key);
+      if (e) e.expireAt = this.now + ms;
+      return 1;
+    }
+    async pttl(key: string): Promise<number> {
+      const e = this.store.get(key);
+      return e ? Math.max(0, e.expireAt - this.now) : -2;
+    }
+  }
+
+  it("shares one window and returns retry-after when exceeded", async () => {
+    const { RedisRateLimiter } = await import("../src/rateLimit.js");
+    const redis = new FakeRedis();
+    const limiter = new RedisRateLimiter(redis, { windowMs: 1000, maxRequests: 2 });
+    expect((await limiter.check("u")).allowed).toBe(true);
+    expect((await limiter.check("u")).allowed).toBe(true);
+    const blocked = await limiter.check("u");
+    expect(blocked.allowed).toBe(false);
+    expect(blocked.retryAfterMs).toBe(1000);
+  });
+
+  it("reopens after the window elapses", async () => {
+    const { RedisRateLimiter } = await import("../src/rateLimit.js");
+    const redis = new FakeRedis();
+    const limiter = new RedisRateLimiter(redis, { windowMs: 1000, maxRequests: 1 });
+    expect((await limiter.check("u")).allowed).toBe(true);
+    expect((await limiter.check("u")).allowed).toBe(false);
+    redis.now = 1500;
+    expect((await limiter.check("u")).allowed).toBe(true);
+  });
+});
