@@ -26,14 +26,15 @@ class ScriptedRule:
 
 
 DEFAULT_RULES: list[ScriptedRule] = [
-    ScriptedRule(r"\b(invoice|bill|billing|charge)", "list_invoices"),
-    ScriptedRule(r"\b(usage|data|internet|gb)\b", "get_line_usage", {"msisdn": "5511970001001"}),
-    ScriptedRule(r"\b(plan|plans|package)\b", "list_plans"),
     ScriptedRule(
-        r"\b(ticket|complaint|open)\b",
+        r"\bopen\b.*\bticket|\bticket\b.*\bopen|\bcomplaint\b",
         "open_support_ticket",
         {"category": "billing", "summary": "Customer reports a mismatch on the invoice"},
     ),
+    ScriptedRule(r"\btickets?\b", "list_support_tickets"),
+    ScriptedRule(r"\b(invoice|bill|billing|charge)", "list_invoices"),
+    ScriptedRule(r"\b(usage|data|internet|gb)\b", "get_line_usage", {"msisdn": "5511970001001"}),
+    ScriptedRule(r"\b(plan|plans|package)\b", "list_plans"),
     ScriptedRule(r"\b(line|lines|number)\b", "list_customer_lines"),
 ]
 

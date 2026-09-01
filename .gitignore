@@ -38,3 +38,9 @@ htmlcov/
 .hive-mind/
 .playwright-mcp/
 *.png
+
+# terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log

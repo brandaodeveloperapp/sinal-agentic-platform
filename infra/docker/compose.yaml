@@ -1,0 +1,63 @@
+name: sinal
+
+services:
+  api-telecom:
+    build: ../../apps/api-telecom
+    environment:
+      ENVIRONMENT: dev
+      LOG_LEVEL: warning
+      API_KEYS: ${API_TELECOM_KEY:-dev-mcp-server-key}
+    ports:
+      - "8081:8081"
+
+  mcp-server:
+    build: ../../apps/mcp-server
+    environment:
+      ENVIRONMENT: dev
+      LOG_LEVEL: warn
+      PORT: "8082"
+      API_TELECOM_URL: http://api-telecom:8081
+      API_TELECOM_KEY: ${API_TELECOM_KEY:-dev-mcp-server-key}
+      JWT_SIGNING_SECRET: ${DOWNSTREAM_SECRET:-dev-only-signing-secret-change-me}
+    ports:
+      - "8082:8082"
+    depends_on:
+      - api-telecom
+
+  agent:
+    build: ../../apps/agent
+    environment:
+      ENVIRONMENT: dev
+      LOG_LEVEL: warning
+      MODEL_PROVIDER: scripted
+      MCP_SERVER_URL: http://mcp-server:8082/mcp
+      DOWNSTREAM_SECRET: ${DOWNSTREAM_SECRET:-dev-only-signing-secret-change-me}
+    expose:
+      - "8083"
+    depends_on:
+      - mcp-server
+
+  bff:
+    build: ../../apps/bff
+    environment:
+      ENVIRONMENT: dev
+      LOG_LEVEL: warn
+      PORT: "8080"
+      AGENT_URL: http://agent:8083
+      DOWNSTREAM_SECRET: ${DOWNSTREAM_SECRET:-dev-only-signing-secret-change-me}
+      SESSION_SECRET: ${SESSION_SECRET:-dev-only-session-secret-value-1234}
+      CORS_ORIGINS: http://localhost:5173
+    ports:
+      - "8080:8080"
+    depends_on:
+      - agent
+
+  web:
+    build:
+      context: ../../apps/web
+      args:
+        VITE_BFF_URL: http://localhost:8080
+    ports:
+      - "5173:8090"
+    depends_on:
+      - bff

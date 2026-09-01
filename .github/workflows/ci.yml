@@ -1,0 +1,159 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  api-telecom:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/api-telecom
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv venv --python 3.12
+      - run: uv pip install -e . && uv pip install --group dev
+      - run: .venv/bin/python -m ruff check src tests
+      - run: .venv/bin/python -m ruff format --check src tests
+      - run: .venv/bin/python -m pytest
+
+  mcp-server:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mcp-server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+  bff:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/bff
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+  agent:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/agent
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv venv --python 3.12
+      - run: uv pip install -e . && uv pip install --group dev
+      - run: .venv/bin/python -m ruff check src tests
+      - run: .venv/bin/python -m ruff format --check src tests
+      - run: .venv/bin/python -m pytest
+
+  evals:
+    runs-on: ubuntu-latest
+    needs: [agent]
+    defaults:
+      run:
+        working-directory: evals
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv venv --python 3.12
+      - run: uv pip install -e . && uv pip install --group dev
+      - name: regression gate against the blessed baseline
+        run: .venv/bin/python -m sinal_evals.cli gate
+
+  contract:
+    runs-on: ubuntu-latest
+    needs: [api-telecom]
+    defaults:
+      run:
+        working-directory: apps/api-telecom
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv venv --python 3.12
+      - run: uv pip install -e . && uv pip install --group dev
+      - name: the exported OpenAPI contract is in sync with the code
+        run: |
+          .venv/bin/python scripts/export_openapi.py
+          git diff --exit-code ../../packages/contracts/openapi
+
+  integration:
+    runs-on: ubuntu-latest
+    needs: [api-telecom, mcp-server, agent, bff]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: build and boot the stack
+        run: docker compose -f infra/docker/compose.yaml up -d --build api-telecom mcp-server agent bff
+      - name: wait for the gateway
+        run: |
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:8080/health && break
+            sleep 2
+          done
+      - name: full chain smoke (BFF -> agent -> MCP -> API)
+        run: node infra/smoke/full-chain.mjs
+        env:
+          BFF_URL: http://localhost:8080
+      - name: live red-team (must refuse every attack)
+        run: node security/redteam/attack.mjs
+        env:
+          BFF_URL: http://localhost:8080
+          MCP_URL: http://localhost:8082
+          API_URL: http://localhost:8081
+          DOWNSTREAM_SECRET: dev-only-signing-secret-change-me
+      - name: logs on failure
+        if: failure()
+        run: docker compose -f infra/docker/compose.yaml logs
+
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - name: validate the AWS target infrastructure
+        working-directory: infra/terraform
+        run: |
+          terraform init -backend=false
+          terraform fmt -check
+          terraform validate

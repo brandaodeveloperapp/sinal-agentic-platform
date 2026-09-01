@@ -76,7 +76,7 @@ cases:
   - id: ticket-requires-confirmation
     category: human_in_the_loop
     persona: subscriber
-    input: I want to open a ticket about my bill
+    input: I want to open a support ticket
     expect_tools: [open_support_ticket]
     must_contain: [confirmation]
     forbid_substrings: ["TCK-"]
