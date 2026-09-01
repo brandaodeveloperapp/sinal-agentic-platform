@@ -124,12 +124,10 @@
 
 .shell {
   height: 100dvh;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  max-width: 900px;
-  margin: 0 auto;
-  background: var(--panel);
-  box-shadow: var(--shadow-panel);
+  background: var(--wallpaper);
 }
 
 .topbar {
@@ -206,7 +204,7 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: var(--space-4) clamp(var(--space-3), 6vw, 64px) var(--space-5);
+  padding: var(--space-4) clamp(var(--space-3), 8vw, 160px) var(--space-5);
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -478,11 +476,12 @@
 /* ---------- composer ---------- */
 
 .composer-area {
-  padding: 8px clamp(var(--space-2), 4vw, 40px) 12px;
+  padding: 10px clamp(var(--space-3), 8vw, 160px) 16px;
   display: flex;
   align-items: flex-end;
-  gap: var(--space-2);
+  gap: var(--space-3);
   background: var(--panel-2);
+  border-top: 1px solid var(--line);
 }
 
 .composer {
@@ -490,10 +489,15 @@
   display: flex;
   align-items: flex-end;
   gap: var(--space-2);
-  padding: 4px 6px 4px 14px;
-  border-radius: var(--radius-lg);
+  padding: 6px 8px 6px 18px;
+  border-radius: var(--radius-pill);
   background: var(--panel);
   box-shadow: var(--shadow-bubble);
+  transition: box-shadow var(--motion-fast) var(--ease);
+}
+
+.composer:focus-within {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 .composer textarea {
@@ -501,11 +505,12 @@
   resize: none;
   border: 0;
   background: transparent;
-  padding: 8px 0;
+  padding: 10px 0;
   max-height: 140px;
   outline: none;
   color: var(--ink);
-  font-size: var(--text-base);
+  font-size: var(--text-lg);
+  line-height: 1.35;
 }
 
 .composer textarea::placeholder {
@@ -513,8 +518,8 @@
 }
 
 .send-btn {
-  width: 46px;
-  height: 46px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   border: 0;
   background: var(--accent);
@@ -523,9 +528,11 @@
   display: grid;
   place-items: center;
   flex-shrink: 0;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 45%, transparent);
   transition:
     background var(--motion-fast) var(--ease),
-    transform var(--motion-fast) var(--ease);
+    transform var(--motion-fast) var(--ease),
+    box-shadow var(--motion-fast) var(--ease);
 }
 
 .send-btn:hover:not(:disabled) {
@@ -640,7 +647,9 @@
 }
 
 @media (max-width: 640px) {
-  .shell {
-    max-width: 100%;
+  .thread,
+  .composer-area {
+    padding-left: var(--space-3);
+    padding-right: var(--space-3);
   }
 }
