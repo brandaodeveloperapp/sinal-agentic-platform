@@ -75,7 +75,7 @@ AWS Secrets Manager with credentials obtained through an IAM role.
 | MCP Server | `cd apps/mcp-server && npm test` | 50 |
 | Agent | `cd apps/agent && .venv/bin/python -m pytest` | 28 |
 | Gateway | `cd apps/bff && npm test` | 29 |
-| Web | `cd apps/web && npm test` | 27 |
+| Web | `cd apps/web && npm test` | 32 |
 
 End-to-end without mocks, against a running stack:
 

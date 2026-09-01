@@ -30,6 +30,13 @@ Beyond the answer itself, the interface surfaces what the platform is doing:
 That makes authorization visible in the product: a subscriber and an attendant see
 different tool lists on the same screen.
 
+## Design system
+
+Every colour, space, radius, shadow and duration lives in `src/styles/tokens.css`.
+Components never hardcode a value, so retargeting the interface to another carrier
+brand is one file. Light and dark palettes are both defined there and follow the
+system setting.
+
 ## Accessibility
 
 The streaming region is an `aria-live="polite"` container marked `aria-busy` while
@@ -53,7 +60,9 @@ read at build time, so the Docker image takes it as a build argument.
 npm test
 ```
 
-24 tests (98.6% coverage): the SSE parser against awkward chunk boundaries, sign-in
-success and failure, streamed assembly of an answer from token frames, tool badges,
-per-turn cost, session id stability across turns, and the three failure paths the
-user can actually hit — rate limit, expired session and an agent error frame.
+32 tests: the SSE parser against awkward chunk boundaries and both LF and CRLF
+line endings, sign-in success and failure, streamed assembly of an answer from
+token frames, tool badges, per-turn cost, session id stability across turns,
+suggestion chips, Enter to send and Shift+Enter for a new line, and the three
+failure paths the user can actually hit — rate limit, expired session and an agent
+error frame.

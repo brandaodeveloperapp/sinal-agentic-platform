@@ -144,7 +144,7 @@ describe("streaming a turn", () => {
     await user.click(screen.getByRole("button", { name: /send/i }));
 
     await waitFor(() => {
-      expect(screen.getByText("tools available to you")).toBeInTheDocument();
+      expect(screen.getByText(/tools available to you \(2\)/)).toBeInTheDocument();
     });
     expect(screen.getAllByText("list_plans").length).toBeGreaterThan(0);
   });
@@ -235,5 +235,47 @@ describe("failures", () => {
     await waitFor(() => {
       expect(screen.getByText(/assistant is unavailable right now/i)).toBeInTheDocument();
     });
+  });
+});
+
+describe("composer and suggestions", () => {
+  it("sends a suggestion from the empty state", async () => {
+    render(<App />);
+    const user = await signIn();
+    await user.click(screen.getByRole("button", { name: /how much data have i used/i }));
+    await waitFor(() => expect(streamCalls).toHaveLength(1));
+    expect(streamCalls[0]?.body.message).toBe("How much data have I used");
+  });
+
+  it("sends on Enter", async () => {
+    render(<App />);
+    const user = await signIn();
+    await user.type(screen.getByLabelText(/message/i), "show my invoice{Enter}");
+    await waitFor(() => expect(streamCalls).toHaveLength(1));
+  });
+
+  it("keeps a new line on Shift+Enter without sending", async () => {
+    render(<App />);
+    const user = await signIn();
+    const input = screen.getByLabelText(/message/i);
+    await user.type(input, "first{Shift>}{Enter}{/Shift}second");
+    expect(streamCalls).toHaveLength(0);
+    expect(input).toHaveValue("first\nsecond");
+  });
+
+  it("hides the suggestions once the conversation starts", async () => {
+    render(<App />);
+    const user = await signIn();
+    await user.type(screen.getByLabelText(/message/i), "show my invoice{Enter}");
+    await waitFor(() => {
+      expect(screen.queryByRole("button", { name: /which plans are available/i })).toBeNull();
+    });
+  });
+
+  it("shows the assistant status in the header while answering", async () => {
+    render(<App />);
+    expect(screen.queryByText("ready")).toBeNull();
+    await signIn();
+    expect(screen.getByText("ready")).toBeInTheDocument();
   });
 });

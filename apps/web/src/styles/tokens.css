@@ -1,0 +1,106 @@
+/*
+ * Design tokens.
+ *
+ * Every colour, space, radius and duration used by the interface is declared here
+ * once. Components never hardcode a hex value, so the palette can be retargeted to
+ * another carrier brand by editing this file alone.
+ */
+
+:root {
+  --brand-from: #1d9bf0;
+  --brand-to: #0b6bcb;
+  --brand-soft: rgba(29, 155, 240, 0.12);
+
+  --bg: #f7f8fa;
+  --bg-elevated: #ffffff;
+  --bg-sunken: #eef1f5;
+  --surface: #ffffff;
+  --surface-hover: #f2f5f9;
+
+  --ink: #101418;
+  --ink-secondary: #48525f;
+  --ink-muted: #6b7683;
+  --ink-inverse: #ffffff;
+
+  --line: #dfe4ea;
+  --line-strong: #c6ced8;
+
+  --accent: #0b6bcb;
+  --accent-hover: #095aad;
+  --accent-ink: #ffffff;
+
+  --success: #0f7b48;
+  --warning: #9a6700;
+  --danger: #b42318;
+  --danger-soft: rgba(180, 35, 24, 0.1);
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-pill: 999px;
+
+  --shadow-sm: 0 1px 2px rgba(16, 20, 24, 0.06), 0 1px 1px rgba(16, 20, 24, 0.04);
+  --shadow-md: 0 6px 20px rgba(16, 20, 24, 0.08);
+  --shadow-lg: 0 24px 60px rgba(16, 20, 24, 0.14);
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+
+  --text-xs: 11.5px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-lg: 18px;
+  --text-xl: 24px;
+  --text-2xl: 32px;
+
+  --motion-fast: 120ms;
+  --motion-base: 200ms;
+  --motion-slow: 360ms;
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --brand-from: #4db2ff;
+    --brand-to: #1667c4;
+    --brand-soft: rgba(77, 178, 255, 0.14);
+
+    --bg: #0b0e13;
+    --bg-elevated: #141922;
+    --bg-sunken: #090c11;
+    --surface: #141922;
+    --surface-hover: #1b2230;
+
+    --ink: #e9edf3;
+    --ink-secondary: #b3bdcc;
+    --ink-muted: #8794a5;
+    --ink-inverse: #0b0e13;
+
+    --line: #232b38;
+    --line-strong: #333f52;
+
+    --accent: #4db2ff;
+    --accent-hover: #74c4ff;
+    --accent-ink: #06121f;
+
+    --success: #4ade80;
+    --warning: #fbbf24;
+    --danger: #ff7b72;
+    --danger-soft: rgba(255, 123, 114, 0.14);
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 28px 70px rgba(0, 0, 0, 0.55);
+  }
+}
