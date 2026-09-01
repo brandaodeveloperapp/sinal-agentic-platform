@@ -150,15 +150,25 @@ def _last_user_text(messages: list[dict[str, Any]]) -> str:
 
 
 def _collect_tool_results(messages: list[dict[str, Any]]) -> list[str]:
+    """Collect tool results belonging to the current turn only.
+
+    Tool results arrive as user-role messages carrying toolResult blocks, so the
+    scan walks backwards and stops at the last real user prompt. Without that stop
+    the model would answer a new question with the previous turn's tool output.
+    """
     results: list[str] = []
-    for message in messages:
-        for block in message.get("content", []):
+    for message in reversed(messages):
+        content = message.get("content", [])
+        if message.get("role") == "user" and any("text" in block for block in content):
+            break
+        for block in content:
             tool_result = block.get("toolResult")
             if not tool_result:
                 continue
             for part in tool_result.get("content", []):
                 if "text" in part:
                     results.append(part["text"])
+    results.reverse()
     return results
 
 

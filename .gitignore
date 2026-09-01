@@ -36,3 +36,5 @@ htmlcov/
 .claude-flow/
 .swarm/
 .hive-mind/
+.playwright-mcp/
+*.png

@@ -97,3 +97,20 @@ async def test_tool_budget_stops_the_turn(settings, tool_provider_spy):
 
     assert collected[-1]["event"] == "error"
     assert collected[-1]["data"]["code"] == "tool_budget_exceeded"
+
+
+async def test_second_question_does_not_reuse_the_previous_tool_result(service, calls):
+    await collect(service, "I want to see my invoice")
+    events = await collect(service, "I want to open a ticket")
+
+    tools_used = [call["tool"] for call in calls]
+    assert tools_used == ["list_invoices", "open_support_ticket"]
+    answer = "".join(event["data"]["text"] for event in events if event["event"] == "token")
+    assert "confirmation_required" in answer
+
+
+async def test_third_turn_still_routes_to_the_right_tool(service, calls):
+    await collect(service, "I want to see my invoice")
+    await collect(service, "which plans do you have")
+    await collect(service, "I want to see my invoice")
+    assert [call["tool"] for call in calls] == ["list_invoices", "list_plans", "list_invoices"]
