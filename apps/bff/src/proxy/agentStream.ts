@@ -1,4 +1,5 @@
 import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
 
 import type { Response } from "express";
 
@@ -76,10 +77,9 @@ export class AgentStreamer {
       this.openStream(res);
       const nodeStream = Readable.fromWeb(upstream.body as Parameters<typeof Readable.fromWeb>[0]);
 
-      for await (const chunk of nodeStream) {
-        res.write(chunk);
-      }
-      res.end();
+      // pipeline propagates backpressure to the upstream reader: a slow browser slows
+      // the read from the agent instead of buffering the whole stream in the gateway.
+      await pipeline(nodeStream, res);
 
       this.deps.logger.info(
         { latency_ms: Date.now() - startedAt, outcome: "completed" },

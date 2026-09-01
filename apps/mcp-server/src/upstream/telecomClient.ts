@@ -24,6 +24,8 @@ export interface TelecomClientOptions {
   logger: Logger;
   fetchImpl?: typeof fetch;
   sleep?: (ms: number) => Promise<void>;
+  cacheTtlMs?: number;
+  now?: () => number;
 }
 
 interface RequestOptions {
@@ -37,13 +39,23 @@ interface RequestOptions {
 
 const RETRYABLE_STATUSES = new Set([429, 502, 503, 504]);
 
+interface CacheEntry {
+  value: unknown;
+  expiresAt: number;
+}
+
 export class TelecomClient {
   private readonly fetchImpl: typeof fetch;
   private readonly sleep: (ms: number) => Promise<void>;
+  private readonly now: () => number;
+  private readonly cacheTtlMs: number;
+  private readonly cache = new Map<string, CacheEntry>();
 
   constructor(private readonly options: TelecomClientOptions) {
     this.fetchImpl = options.fetchImpl ?? fetch;
     this.sleep = options.sleep ?? ((ms: number) => delay(ms));
+    this.now = options.now ?? Date.now;
+    this.cacheTtlMs = options.cacheTtlMs ?? 0;
   }
 
   async request<T>(request: RequestOptions): Promise<T> {
@@ -56,6 +68,21 @@ export class TelecomClient {
     const url = new URL(request.path, this.options.baseUrl);
     for (const [key, value] of Object.entries(request.query ?? {})) {
       if (value !== undefined) url.searchParams.set(key, value);
+    }
+
+    // Short-TTL read-through cache for idempotent GETs. The cache key is the full URL,
+    // which already encodes the customer id in the path, so one customer's response is
+    // never served for another. Writes and fault-injection probes always bypass it, so
+    // a mutation is never masked by a stale read.
+    const method = request.method ?? "GET";
+    const cacheable = this.cacheTtlMs > 0 && method === "GET" && !request.simulateFault;
+    const cacheKey = url.toString();
+    if (cacheable) {
+      const hit = this.cache.get(cacheKey);
+      if (hit && hit.expiresAt > this.now()) {
+        this.options.logger.info({ upstream_path: request.path, cache: "hit" }, "upstream_cache");
+        return hit.value as T;
+      }
     }
 
     const maxAttempts = this.options.maxRetries + 1;
@@ -78,7 +105,11 @@ export class TelecomClient {
             },
             "upstream_call_succeeded",
           );
-          return (await response.json()) as T;
+          const value = (await response.json()) as T;
+          if (cacheable) {
+            this.cache.set(cacheKey, { value, expiresAt: this.now() + this.cacheTtlMs });
+          }
+          return value;
         }
 
         const retryable =

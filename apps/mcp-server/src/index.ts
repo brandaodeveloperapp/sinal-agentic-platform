@@ -20,6 +20,7 @@ const client = new TelecomClient({
   maxRetries: config.TOOL_CALL_MAX_RETRIES,
   breaker,
   logger,
+  cacheTtlMs: config.UPSTREAM_CACHE_TTL_MS,
 });
 
 const verifier = new TokenVerifier({

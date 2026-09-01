@@ -17,6 +17,7 @@ const schema = z.object({
   TOOL_CALL_MAX_RETRIES: z.coerce.number().default(2),
   BREAKER_FAILURE_THRESHOLD: z.coerce.number().default(5),
   BREAKER_COOLDOWN_MS: z.coerce.number().default(15000),
+  UPSTREAM_CACHE_TTL_MS: z.coerce.number().default(3000),
 });
 
 export type Config = z.infer<typeof schema>;

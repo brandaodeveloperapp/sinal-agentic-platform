@@ -49,13 +49,13 @@ def test_session_window_is_bounded():
     assert len(store.get("s1", "user-1").messages) == 3
 
 
-def test_expired_sessions_are_evicted():
+def test_expired_session_is_replaced_on_access():
     store = SessionStore(ttl_s=0, max_messages=5)
     session = store.get("s1", "user-1")
     store.save(session, [{"role": "user", "content": [{"text": "hello"}]}])
     time.sleep(0.01)
-    assert store.get("s2", "user-2") is not None
-    assert len(store) == 1
+    # lazy expiry: accessing the same id after the TTL returns a fresh, empty session
+    assert store.get("s1", "user-1").messages == []
 
 
 def test_dropping_a_session_clears_history():
@@ -64,3 +64,22 @@ def test_dropping_a_session_clears_history():
     store.save(session, [{"role": "user", "content": [{"text": "hello"}]}])
     store.drop("s1")
     assert store.get("s1", "user-1").messages == []
+
+
+def test_lru_evicts_least_recently_used_first():
+    store = SessionStore(ttl_s=60, max_messages=5, max_sessions=2)
+    store.get("a", "u")
+    store.get("b", "u")
+    store.get("a", "u")  # touch a -> b is now least recently used
+    store.get("c", "u")  # inserting c evicts b
+    assert len(store) == 2
+    assert store.get("b", "u").messages == []  # b was evicted (fresh session)
+
+
+def test_touch_on_save_keeps_session_hot():
+    store = SessionStore(ttl_s=60, max_messages=5, max_sessions=2)
+    a = store.get("a", "u")
+    store.get("b", "u")
+    store.save(a, [{"role": "user", "content": [{"text": "hi"}]}])  # touch a
+    store.get("c", "u")  # evicts b, not a
+    assert len(store.get("a", "u").messages) == 1

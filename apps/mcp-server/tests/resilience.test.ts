@@ -146,3 +146,50 @@ describe("upstream client resilience", () => {
     expect(headers["x-acting-user"]).toBe("user-42");
   });
 });
+
+describe("upstream read cache", () => {
+  it("serves a repeated GET from cache within the TTL", async () => {
+    let now = 0;
+    const fetchImpl = vi.fn(async () => jsonResponse(200, { ok: true }));
+    const breaker = new CircuitBreaker({ failureThreshold: 2, cooldownMs: 1000 });
+    const client = new TelecomClient({
+      baseUrl: "http://upstream.test",
+      apiKey: "k",
+      timeoutMs: 50,
+      maxRetries: 0,
+      breaker,
+      logger,
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+      sleep: async () => {},
+      cacheTtlMs: 3000,
+      now: () => now,
+    });
+    await client.request({ path: "/v1/plans", actingUser: "u" });
+    await client.request({ path: "/v1/plans", actingUser: "u" });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    now = 4000;
+    await client.request({ path: "/v1/plans", actingUser: "u" });
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it("never caches a POST or a fault probe", async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse(200, { ok: true }));
+    const breaker = new CircuitBreaker({ failureThreshold: 2, cooldownMs: 1000 });
+    const client = new TelecomClient({
+      baseUrl: "http://upstream.test",
+      apiKey: "k",
+      timeoutMs: 50,
+      maxRetries: 0,
+      breaker,
+      logger,
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+      sleep: async () => {},
+      cacheTtlMs: 3000,
+    });
+    await client.request({ method: "POST", path: "/v1/tickets", body: {}, actingUser: "u" });
+    await client.request({ method: "POST", path: "/v1/tickets", body: {}, actingUser: "u" });
+    await client.request({ path: "/v1/plans", actingUser: "u", simulateFault: "none" });
+    await client.request({ path: "/v1/plans", actingUser: "u", simulateFault: "none" });
+    expect(fetchImpl).toHaveBeenCalledTimes(4);
+  });
+});
