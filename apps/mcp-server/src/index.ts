@@ -4,6 +4,7 @@ import { loadConfig } from "./config.js";
 import { createLogger } from "./logger.js";
 import { CircuitBreaker } from "./upstream/circuitBreaker.js";
 import { TelecomClient } from "./upstream/telecomClient.js";
+import { buildKnowledgeBase } from "./knowledge/index.js";
 
 const config = loadConfig();
 const logger = createLogger(config.SERVICE_NAME, config.ENVIRONMENT, config.LOG_LEVEL);
@@ -29,7 +30,8 @@ const verifier = new TokenVerifier({
   signingSecret: config.JWT_SIGNING_SECRET,
 });
 
-const app = createApp({ config, logger, client, verifier });
+const knowledge = buildKnowledgeBase();
+const app = createApp({ config, logger, client, verifier, knowledge });
 
 const server = app.listen(config.PORT, () => {
   logger.info({ port: config.PORT, upstream: config.API_TELECOM_URL }, "mcp_server_started");

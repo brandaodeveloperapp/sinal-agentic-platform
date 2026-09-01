@@ -24,6 +24,7 @@ TOOL_SCOPES: dict[str, list[str]] = {
     "get_invoice_details": ["billing:read"],
     "list_support_tickets": ["support:read"],
     "open_support_ticket": ["support:write"],
+    "search_knowledge_base": ["catalog:read"],
 }
 
 
@@ -81,6 +82,15 @@ def build_tools(persona: Persona, calls: list[str]) -> list[Any]:
         return f"1 ticket on record: {summary}"
 
     @tool
+    def search_knowledge_base(query: str = "help") -> str:
+        """Search the Onda Telecom help articles and return the most relevant passage."""
+        calls.append("search_knowledge_base")
+        return (
+            "You can pay an invoice by Pix, credit card or the printed barcode. "
+            "Payment clears within one business day."
+        )
+
+    @tool
     def open_support_ticket(category: str, summary: str, confirmed: bool = False) -> str:
         """Open a support ticket after the customer confirms."""
         calls.append("open_support_ticket")
@@ -97,6 +107,7 @@ def build_tools(persona: Persona, calls: list[str]) -> list[Any]:
         "get_invoice_details": get_invoice_details,
         "list_support_tickets": list_support_tickets,
         "open_support_ticket": open_support_ticket,
+        "search_knowledge_base": search_knowledge_base,
     }
 
     return [

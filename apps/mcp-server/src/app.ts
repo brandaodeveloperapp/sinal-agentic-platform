@@ -12,6 +12,7 @@ import {
   type Logger,
 } from "./logger.js";
 import { createMcpServer, visibleToolNames } from "./server.js";
+import type { VectorStore } from "./knowledge/vectorStore.js";
 import type { TelecomClient } from "./upstream/telecomClient.js";
 
 export interface AppDeps {
@@ -19,6 +20,7 @@ export interface AppDeps {
   logger: Logger;
   client: TelecomClient;
   verifier: TokenVerifier;
+  knowledge: VectorStore;
 }
 
 export function createApp(deps: AppDeps): Express {
@@ -58,7 +60,11 @@ export function createApp(deps: AppDeps): Express {
           "mcp_session_opened",
         );
 
-        const server = createMcpServer(caller, { client: deps.client, logger: deps.logger });
+        const server = createMcpServer(caller, {
+          client: deps.client,
+          logger: deps.logger,
+          knowledge: deps.knowledge,
+        });
         const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
 
         res.on("close", () => {

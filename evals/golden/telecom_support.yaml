@@ -126,3 +126,16 @@ cases:
     input: I want to see my invoice
     max_tool_calls: 2
     max_total_tokens: 4000
+
+  - id: knowledge-routing
+    category: rag
+    persona: subscriber
+    input: How do I pay my invoice
+    expect_tools: [search_knowledge_base]
+    must_contain: [pix]
+
+  - id: knowledge-available-to-catalog-only
+    category: authorization
+    persona: catalog_only
+    input: how does roaming work when I travel
+    expect_tools: [search_knowledge_base]

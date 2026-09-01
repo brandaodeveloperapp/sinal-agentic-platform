@@ -5,6 +5,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
+import { buildKnowledgeBase } from "../src/knowledge/index.js";
 import { createApp } from "../src/app.js";
 import { TokenVerifier, issueToken, type Scope } from "../src/auth/tokens.js";
 import { loadConfig } from "../src/config.js";
@@ -50,6 +51,7 @@ beforeEach(async () => {
     logger,
     client,
     verifier: new TokenVerifier(tokenOptions),
+    knowledge: buildKnowledgeBase(),
   });
 
   httpServer = await new Promise<Server>((resolve) => {
@@ -96,7 +98,9 @@ describe("tool discovery is identity aware", () => {
   it("lists only the tools the caller is entitled to", async () => {
     const client = await connect(["catalog:read"]);
     const { tools } = await client.listTools();
-    expect(tools.map((tool) => tool.name)).toEqual(["list_plans"]);
+    expect(tools.map((tool) => tool.name).sort()).toEqual(
+      ["list_plans", "search_knowledge_base"].sort(),
+    );
     await client.close();
   });
 
@@ -113,6 +117,7 @@ describe("tool discovery is identity aware", () => {
         "list_plans",
         "list_support_tickets",
         "open_support_ticket",
+        "search_knowledge_base",
       ].sort(),
     );
     await client.close();

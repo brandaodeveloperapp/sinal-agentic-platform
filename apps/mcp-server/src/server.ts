@@ -4,6 +4,7 @@ import { ToolAuthorizationError, authorizeToolCall, isToolVisible } from "./auth
 import type { CallerIdentity } from "./auth/tokens.js";
 import type { Logger } from "./logger.js";
 import { TOOL_DEFINITIONS } from "./tools/definitions.js";
+import type { VectorStore } from "./knowledge/vectorStore.js";
 import type { TelecomClient } from "./upstream/telecomClient.js";
 import { CircuitOpenError } from "./upstream/circuitBreaker.js";
 import { UpstreamError } from "./upstream/telecomClient.js";
@@ -14,6 +15,7 @@ export const SERVER_VERSION = "0.1.0";
 export interface McpServerDeps {
   client: TelecomClient;
   logger: Logger;
+  knowledge: VectorStore;
 }
 
 export function visibleToolNames(caller: CallerIdentity): string[] {
@@ -56,6 +58,7 @@ export function createMcpServer(caller: CallerIdentity, deps: McpServerDeps): Mc
             caller,
             client: deps.client,
             logger: deps.logger,
+            knowledge: deps.knowledge,
           });
 
           deps.logger.info(

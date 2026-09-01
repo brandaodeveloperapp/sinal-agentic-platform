@@ -27,6 +27,11 @@ class ScriptedRule:
 
 DEFAULT_RULES: list[ScriptedRule] = [
     ScriptedRule(
+        r"\bhow\s+(do|can|does|to)\b|\b(roaming|travel|abroad|cancel|esim|coverage|signal|rollover|upgrade|downgrade|stolen|swap)\b",
+        "search_knowledge_base",
+        {"query": "customer help question"},
+    ),
+    ScriptedRule(
         r"\bopen\b.*\bticket|\bticket\b.*\bopen|\bcomplaint\b",
         "open_support_ticket",
         {"category": "billing", "summary": "Customer reports a mismatch on the invoice"},
@@ -78,13 +83,14 @@ class ScriptedModel(Model):
                 yield event
             return
 
-        rule = self._match(_last_user_text(messages))
+        user_text = _last_user_text(messages)
+        rule = self._match(user_text)
         if rule is None or rule.tool_name not in available:
             async for event in self._emit_text(FALLBACK_TEXT):
                 yield event
             return
 
-        async for event in self._emit_tool_use(rule):
+        async for event in self._emit_tool_use(rule, user_text):
             yield event
 
     def _match(self, text: str) -> ScriptedRule | None:
@@ -103,8 +109,15 @@ class ScriptedModel(Model):
         yield {"messageStop": {"stopReason": "end_turn"}}
         yield _usage_event(len(text))
 
-    async def _emit_tool_use(self, rule: ScriptedRule) -> AsyncGenerator[dict[str, Any], None]:
-        payload = json.dumps(rule.tool_input)
+    async def _emit_tool_use(
+        self, rule: ScriptedRule, user_text: str
+    ) -> AsyncGenerator[dict[str, Any], None]:
+        # A retrieval tool is only useful with the real question as its query; a real
+        # model would pass it, so the scripted baseline does too.
+        tool_input = dict(rule.tool_input)
+        if rule.tool_name == "search_knowledge_base":
+            tool_input = {"query": user_text}
+        payload = json.dumps(tool_input)
         yield {"messageStart": {"role": "assistant"}}
         yield {
             "contentBlockStart": {

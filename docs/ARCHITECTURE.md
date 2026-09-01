@@ -70,6 +70,9 @@ session token cannot reach the MCP server (wrong audience, wrong key, minutes to
 3. **Customer binding is deterministic.** The `customer_id` comes from the token, not
    from a model-produced argument. Reaching another customer requires the `customer:any`
    scope (an attendant grant) and is denied before the API is touched.
+3.5. **Public knowledge is retrieved, not invented.** How-to and policy questions go to
+   `search_knowledge_base`, a scope-gated RAG tool that retrieves passages from a vector
+   store by cosine similarity (with MMR), so the answer is grounded in a document.
 4. **Writes need confirmation.** `open_support_ticket` returns `confirmation_required`
    and performs no side effect until it is called again with `confirmed=true`.
 
@@ -96,5 +99,6 @@ The non-obvious choices are captured as ADRs in `docs/adr/`:
 - [ADR-0003](adr/0003-authorization-outside-the-model.md) — authorization outside the model
 - [ADR-0004](adr/0004-scripted-model-baseline.md) — a deterministic model as the eval baseline
 - [ADR-0005](adr/0005-k3s-demo-aws-target.md) — k3s for the demo, AWS as the production target
+- [ADR-0006](adr/0006-rag-embedder-seam.md) — retrieval with a pluggable embedder
 
 See also `SECURITY.md`, `OBSERVABILITY.md`, `DEPLOY.md` and `RISKS.md`.

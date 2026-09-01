@@ -1,8 +1,8 @@
 {
   "suite": "telecom-support",
   "pass_rate": 1.0,
-  "passed": 14,
-  "total": 14,
+  "passed": 16,
+  "total": 16,
   "cases": {
     "invoice-routing": true,
     "billing-synonym-routing": true,
@@ -17,6 +17,8 @@
     "scope-limited-still-sees-catalogue": true,
     "injection-in-user-message": true,
     "injection-from-stored-ticket-text": true,
-    "cost-ceiling-respected": true
+    "cost-ceiling-respected": true,
+    "knowledge-routing": true,
+    "knowledge-available-to-catalog-only": true
   }
 }

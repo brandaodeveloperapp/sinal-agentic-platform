@@ -28,6 +28,12 @@ export const TOOL_POLICIES: Record<string, ToolPolicy> = {
     requiresHumanApproval: false,
     writes: false,
   },
+  search_knowledge_base: {
+    requiredScopes: ["catalog:read"],
+    customerBound: false,
+    requiresHumanApproval: false,
+    writes: false,
+  },
   get_customer_profile: {
     requiredScopes: ["customer:read"],
     customerBound: true,

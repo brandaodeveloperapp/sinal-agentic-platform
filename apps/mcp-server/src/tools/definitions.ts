@@ -287,6 +287,35 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       };
     },
   },
+  {
+    name: "search_knowledge_base",
+    title: "Search help articles",
+    description:
+      "Searches the Onda Telecom help articles (roaming, payment, plan changes, coverage, " +
+      "eSIM, cancellation) and returns the most relevant passages. Public information; " +
+      "exposes no customer data. Use it to answer how-to and policy questions.",
+    inputSchema: {
+      query: z.string().min(3).max(200).describe("The customer's question in natural language"),
+    },
+    readOnly: true,
+    handler: async (args, { knowledge }) => {
+      const passages = knowledge.search(sanitizeUntrustedText(args.query as string, 200), 3, {
+        mmr: true,
+      });
+      if (passages.length === 0) {
+        return {
+          summary: "No help article matched that question.",
+          data: { passages: [] },
+        };
+      }
+      return {
+        summary: passages[0]!.text,
+        data: {
+          passages: passages.map((p) => ({ title: p.title, text: p.text, score: p.score })),
+        },
+      };
+    },
+  },
 ];
 
 export const TOOL_INDEX: Map<string, ToolDefinition> = new Map(
