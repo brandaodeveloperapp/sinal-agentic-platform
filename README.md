@@ -74,9 +74,11 @@ AWS Secrets Manager with credentials obtained through an IAM role.
 | Corporate API | `cd apps/api-telecom && .venv/bin/python -m pytest` | 22 |
 | MCP Server | `cd apps/mcp-server && npm test` | 50 |
 | Agent | `cd apps/agent && .venv/bin/python -m pytest` | 26 |
+| Gateway | `cd apps/bff && npm test` | 29 |
 
 End-to-end without mocks, against a running stack:
 
 ```bash
-apps/agent/.venv/bin/python infra/smoke/agent-e2e.py
+apps/agent/.venv/bin/python infra/smoke/agent-e2e.py   # agent -> MCP -> API
+node infra/smoke/full-chain.mjs                        # BFF -> agent -> MCP -> API
 ```

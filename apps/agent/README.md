@@ -55,7 +55,9 @@ back by pointing the variable at the previous version — no image rebuild.
 ## Run
 
 ```bash
-uv venv --python 3.12 && uv pip install -e ".[dev]" --group dev
+uv venv --python 3.12
+uv pip install -e .
+uv pip install --group dev
 .venv/bin/uvicorn sinal_agent.main:app --port 8083 --reload
 ```
 

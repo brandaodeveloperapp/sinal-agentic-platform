@@ -7,7 +7,8 @@ behind the MCP tools — the agent never calls it directly.
 
 ```bash
 uv venv --python 3.12
-uv pip install -e ".[dev]" --group dev
+uv pip install -e .
+uv pip install --group dev
 .venv/bin/uvicorn sinal_api.main:app --port 8081 --reload
 ```
 
