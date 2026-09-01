@@ -16,7 +16,7 @@ export function Composer({ streaming, onSend, onStop }: ComposerProps) {
     const element = textarea.current;
     if (!element) return;
     element.style.height = "auto";
-    element.style.height = `${Math.min(element.scrollHeight, 168)}px`;
+    element.style.height = `${Math.min(element.scrollHeight, 140)}px`;
   }, [draft]);
 
   function submit() {
@@ -38,8 +38,8 @@ export function Composer({ streaming, onSend, onStop }: ComposerProps) {
   }
 
   return (
-    <div className="composer-area">
-      <form className="composer" onSubmit={handleSubmit}>
+    <form className="composer-area" onSubmit={handleSubmit}>
+      <div className="composer">
         <label className="sr-only" htmlFor="message">
           Message
         </label>
@@ -49,33 +49,26 @@ export function Composer({ streaming, onSend, onStop }: ComposerProps) {
           ref={textarea}
           rows={1}
           maxLength={MAX_LENGTH}
-          placeholder="Ask about your invoice, usage or plan"
+          placeholder="Type a message"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={handleKeyDown}
           disabled={streaming}
         />
-        {streaming ? (
-          <button className="btn btn-ghost" type="button" onClick={onStop}>
-            Stop
-          </button>
-        ) : (
-          <button className="btn" type="submit" disabled={!draft.trim()}>
-            Send
-          </button>
-        )}
-      </form>
-
-      <div className="composer-hint">
-        <span>
-          <kbd>Enter</kbd> to send · <kbd>Shift</kbd> + <kbd>Enter</kbd> for a new line
-        </span>
-        {draft.length > MAX_LENGTH - 200 ? (
-          <span>
-            {draft.length}/{MAX_LENGTH}
-          </span>
-        ) : null}
       </div>
-    </div>
+      {streaming ? (
+        <button className="send-btn" type="button" onClick={onStop} aria-label="Stop">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
+            <rect x="4" y="4" width="10" height="10" rx="2" />
+          </svg>
+        </button>
+      ) : (
+        <button className="send-btn" type="submit" disabled={!draft.trim()} aria-label="Send">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M3 20.5v-6l8-2.5-8-2.5v-6l19 8.5z" />
+          </svg>
+        </button>
+      )}
+    </form>
   );
 }

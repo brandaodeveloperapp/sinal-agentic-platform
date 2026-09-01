@@ -3,6 +3,10 @@ import { useCallback, useRef, useState } from "react";
 import { ApiError, streamTurn } from "../api/client.js";
 import type { ChatMessage } from "../types.js";
 
+function clock(): string {
+  return new Date().toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+}
+
 function newId(): string {
   return globalThis.crypto?.randomUUID?.() ?? `id-${Math.random().toString(36).slice(2)}`;
 }
@@ -45,8 +49,8 @@ export function useChat(token: string | null) {
         error: null,
         messages: [
           ...current.messages,
-          { id: newId(), role: "user", text: trimmed, toolCalls: [] },
-          { id: assistantId, role: "assistant", text: "", toolCalls: [] },
+          { id: newId(), role: "user", text: trimmed, time: clock(), toolCalls: [] },
+          { id: assistantId, role: "assistant", text: "", time: clock(), toolCalls: [] },
         ],
       }));
 

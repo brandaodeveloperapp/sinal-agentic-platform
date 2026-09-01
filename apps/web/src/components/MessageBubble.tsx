@@ -1,11 +1,22 @@
 import type { ChatMessage } from "../types.js";
-import { BrandMark } from "./BrandMark.js";
-import { ToolBadges } from "./ToolBadges.js";
 import { TypingDots } from "./TypingDots.js";
 
 interface MessageBubbleProps {
   message: ChatMessage;
   streaming: boolean;
+}
+
+function Ticks() {
+  return (
+    <span className="bubble__ticks" aria-hidden="true">
+      <svg width="16" height="11" viewBox="0 0 16 11" fill="none">
+        <path
+          d="M11.1 0.5 5.2 8.4 2.9 6 1.8 7 5.3 10.5 12.3 1.5zM15 0.5 9.1 8.4 8.2 7.2 7.1 8.2 9.2 10.5 16.2 1.5z"
+          fill="currentColor"
+        />
+      </svg>
+    </span>
+  );
 }
 
 export function MessageBubble({ message, streaming }: MessageBubbleProps) {
@@ -14,20 +25,25 @@ export function MessageBubble({ message, streaming }: MessageBubbleProps) {
 
   return (
     <div className={`row row--${message.role}`}>
-      {assistant ? (
-        <span className="avatar" aria-hidden="true">
-          <BrandMark size={18} title="" />
-        </span>
-      ) : null}
-
       <article className={`bubble ${message.failed ? "bubble--failed" : ""}`}>
-        <ToolBadges tools={message.toolCalls} label="used" />
-        <div className="bubble__body">{pending ? <TypingDots /> : message.text}</div>
+        {pending ? (
+          <TypingDots />
+        ) : (
+          <span className="bubble__text">{message.text}</span>
+        )}
+
+        {!pending ? (
+          <span className="bubble__meta">
+            {message.time}
+            {!assistant ? <Ticks /> : null}
+          </span>
+        ) : null}
+
         {message.stats ? (
-          <p className="bubble__meta">
+          <span className="bubble__cost">
             {message.stats.totalTokens} tokens · {Math.round(message.stats.latencyMs)} ms ·{" "}
             {message.stats.stopReason}
-          </p>
+          </span>
         ) : null}
       </article>
     </div>

@@ -1,38 +1,45 @@
 /*
- * Design tokens.
+ * Design tokens — WhatsApp-inspired conversational palette.
  *
  * Every colour, space, radius and duration used by the interface is declared here
  * once. Components never hardcode a hex value, so the palette can be retargeted to
- * another carrier brand by editing this file alone.
+ * another brand by editing this file alone.
  */
 
 :root {
-  --brand-from: #1d9bf0;
-  --brand-to: #0b6bcb;
-  --brand-soft: rgba(29, 155, 240, 0.12);
+  --brand: #008069;
+  --brand-strong: #005c4b;
+  --brand-ink: #ffffff;
 
-  --bg: #f7f8fa;
-  --bg-elevated: #ffffff;
-  --bg-sunken: #eef1f5;
-  --surface: #ffffff;
-  --surface-hover: #f2f5f9;
+  --wallpaper: #efeae2;
+  --wallpaper-line: rgba(11, 20, 26, 0.04);
 
-  --ink: #101418;
-  --ink-secondary: #48525f;
-  --ink-muted: #6b7683;
-  --ink-inverse: #ffffff;
+  --bg: #f0f2f5;
+  --panel: #ffffff;
+  --panel-2: #f5f6f6;
+  --header: #008069;
+  --header-ink: #ffffff;
 
-  --line: #dfe4ea;
-  --line-strong: #c6ced8;
+  --bubble-in: #ffffff;
+  --bubble-out: #d9fdd3;
+  --bubble-ink: #111b21;
+  --bubble-meta: #667781;
 
-  --accent: #0b6bcb;
-  --accent-hover: #095aad;
-  --accent-ink: #ffffff;
+  --ink: #111b21;
+  --ink-secondary: #3b4a54;
+  --ink-muted: #667781;
 
-  --success: #0f7b48;
-  --warning: #9a6700;
-  --danger: #b42318;
-  --danger-soft: rgba(180, 35, 24, 0.1);
+  --line: #e9edef;
+  --line-strong: #d1d7db;
+
+  --accent: #008069;
+  --accent-hover: #017561;
+  --tick: #53bdeb;
+
+  --danger: #b4232c;
+  --danger-soft: rgba(180, 35, 44, 0.1);
+  --system-chip: #ffeecd;
+  --system-ink: #7c6a3a;
 
   --space-1: 4px;
   --space-2: 8px;
@@ -42,29 +49,26 @@
   --space-6: 32px;
   --space-7: 48px;
 
-  --radius-sm: 8px;
+  --radius-sm: 7px;
   --radius-md: 12px;
   --radius-lg: 16px;
-  --radius-xl: 22px;
   --radius-pill: 999px;
 
-  --shadow-sm: 0 1px 2px rgba(16, 20, 24, 0.06), 0 1px 1px rgba(16, 20, 24, 0.04);
-  --shadow-md: 0 6px 20px rgba(16, 20, 24, 0.08);
-  --shadow-lg: 0 24px 60px rgba(16, 20, 24, 0.14);
+  --shadow-bubble: 0 1px 0.5px rgba(11, 20, 26, 0.13);
+  --shadow-panel: 0 2px 10px rgba(11, 20, 26, 0.16);
 
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-sans:
+    "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Helvetica Neue", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
 
-  --text-xs: 11.5px;
-  --text-sm: 13px;
-  --text-base: 15px;
-  --text-lg: 18px;
-  --text-xl: 24px;
-  --text-2xl: 32px;
+  --text-xs: 11px;
+  --text-sm: 12.5px;
+  --text-base: 14.2px;
+  --text-lg: 17px;
+  --text-xl: 21px;
 
   --motion-fast: 120ms;
   --motion-base: 200ms;
-  --motion-slow: 360ms;
   --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
 
   color-scheme: light dark;
@@ -72,35 +76,41 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --brand-from: #4db2ff;
-    --brand-to: #1667c4;
-    --brand-soft: rgba(77, 178, 255, 0.14);
+    --brand: #00a884;
+    --brand-strong: #005c4b;
+    --brand-ink: #e9edef;
 
-    --bg: #0b0e13;
-    --bg-elevated: #141922;
-    --bg-sunken: #090c11;
-    --surface: #141922;
-    --surface-hover: #1b2230;
+    --wallpaper: #0b141a;
+    --wallpaper-line: rgba(233, 237, 239, 0.03);
 
-    --ink: #e9edf3;
-    --ink-secondary: #b3bdcc;
-    --ink-muted: #8794a5;
-    --ink-inverse: #0b0e13;
+    --bg: #111b21;
+    --panel: #111b21;
+    --panel-2: #202c33;
+    --header: #202c33;
+    --header-ink: #e9edef;
 
-    --line: #232b38;
-    --line-strong: #333f52;
+    --bubble-in: #202c33;
+    --bubble-out: #005c4b;
+    --bubble-ink: #e9edef;
+    --bubble-meta: #8696a0;
 
-    --accent: #4db2ff;
-    --accent-hover: #74c4ff;
-    --accent-ink: #06121f;
+    --ink: #e9edef;
+    --ink-secondary: #d1d7db;
+    --ink-muted: #8696a0;
 
-    --success: #4ade80;
-    --warning: #fbbf24;
-    --danger: #ff7b72;
-    --danger-soft: rgba(255, 123, 114, 0.14);
+    --line: #222e35;
+    --line-strong: #2a3942;
 
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
-    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
-    --shadow-lg: 0 28px 70px rgba(0, 0, 0, 0.55);
+    --accent: #00a884;
+    --accent-hover: #06cf9c;
+    --tick: #53bdeb;
+
+    --danger: #f15c6d;
+    --danger-soft: rgba(241, 92, 109, 0.14);
+    --system-chip: #182229;
+    --system-ink: #ffd279;
+
+    --shadow-bubble: 0 1px 0.5px rgba(0, 0, 0, 0.35);
+    --shadow-panel: 0 2px 12px rgba(0, 0, 0, 0.5);
   }
 }

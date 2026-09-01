@@ -1,8 +1,9 @@
-import { useEffect, useRef } from "react";
+import { Fragment, useEffect, useRef } from "react";
 
 import type { ChatMessage } from "../types.js";
 import { EmptyState } from "./EmptyState.js";
 import { MessageBubble } from "./MessageBubble.js";
+import { ToolNote } from "./ToolNote.js";
 
 interface MessageListProps {
   messages: ChatMessage[];
@@ -17,15 +18,28 @@ export function MessageList({ messages, streaming, onPickSuggestion }: MessageLi
     anchor.current?.scrollIntoView({ block: "end", behavior: "smooth" });
   }, [messages]);
 
+  if (messages.length === 0) {
+    return (
+      <div className="thread" aria-live="polite" aria-busy={streaming}>
+        <EmptyState onPick={onPickSuggestion} disabled={streaming} />
+        <div ref={anchor} />
+      </div>
+    );
+  }
+
   return (
     <div className="thread" aria-live="polite" aria-busy={streaming}>
-      {messages.length === 0 ? (
-        <EmptyState onPick={onPickSuggestion} disabled={streaming} />
-      ) : (
-        messages.map((message) => (
-          <MessageBubble key={message.id} message={message} streaming={streaming} />
-        ))
-      )}
+      <p className="system-line">
+        Answers come from Onda Telecom systems, not from memory. You only see what your account
+        allows.
+      </p>
+      <span className="day-pill">Today</span>
+      {messages.map((message) => (
+        <Fragment key={message.id}>
+          <ToolNote tools={message.toolCalls} />
+          <MessageBubble message={message} streaming={streaming} />
+        </Fragment>
+      ))}
       <div ref={anchor} />
     </div>
   );

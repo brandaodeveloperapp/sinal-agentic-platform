@@ -1,7 +1,9 @@
 # sinal-web
 
-Conversational UI in React and TypeScript. It signs the user in against the
-gateway and renders the agent answer as it streams.
+Conversational UI in React and TypeScript, styled as a familiar chat (WhatsApp-like:
+teal header, wallpaper thread, green outgoing bubbles with delivery ticks and time,
+white incoming bubbles). It signs the user in against the gateway and renders the
+agent answer as it streams.
 
 ## Why not EventSource
 
@@ -23,9 +25,9 @@ Beyond the answer itself, the interface surfaces what the platform is doing:
 
 | Element | Source |
 |---|---|
-| Tools available to you | `ready` event — reflects the caller scopes |
-| Badge on the answer | `tool_call` events — which capability was used |
-| Tokens, latency, stop reason | `done` event — per-turn cost |
+| Header subtitle "N tools available to you" | `ready` event — reflects the caller scopes |
+| "used <tool>" chip above an answer | `tool_call` events — which capability was used |
+| Tokens, latency, stop reason under a bubble | `done` event — per-turn cost |
 
 That makes authorization visible in the product: a subscriber and an attendant see
 different tool lists on the same screen.

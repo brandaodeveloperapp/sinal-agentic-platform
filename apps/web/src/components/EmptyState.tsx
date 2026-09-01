@@ -1,3 +1,5 @@
+import { BrandMark } from "./BrandMark.js";
+
 const SUGGESTIONS = [
   "I want to see my invoice",
   "How much data have I used",
@@ -13,10 +15,11 @@ interface EmptyStateProps {
 export function EmptyState({ onPick, disabled }: EmptyStateProps) {
   return (
     <div className="empty">
-      <p className="empty-title">How can I help?</p>
-      <p className="empty-sub">
-        Ask about your plan, data usage, invoices or support tickets.
-      </p>
+      <span className="empty-badge">
+        <BrandMark size={36} />
+      </span>
+      <p className="empty-title">Onda Telecom assistant</p>
+      <p className="empty-sub">Ask about your plan, data usage, invoices or support tickets.</p>
       <div className="suggestions">
         {SUGGESTIONS.map((suggestion) => (
           <button

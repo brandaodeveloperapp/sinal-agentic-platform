@@ -88,7 +88,7 @@ async function signIn(user = userEvent.setup()) {
   await user.type(screen.getByLabelText(/username/i), "marina");
   await user.type(screen.getByLabelText(/password/i), "demo1234");
   await user.click(screen.getByRole("button", { name: /sign in/i }));
-  await screen.findByText("Marina Andrade");
+  await screen.findByPlaceholderText("Type a message");
   return user;
 }
 
@@ -98,10 +98,10 @@ describe("sign in", () => {
     expect(screen.getByRole("heading", { name: /onda telecom/i })).toBeInTheDocument();
   });
 
-  it("moves to the chat and shows who is signed in", async () => {
+  it("moves to the chat and keeps the signed-in identity accessible", async () => {
     render(<App />);
     await signIn();
-    expect(screen.getByText("CUS-1001")).toBeInTheDocument();
+    expect(screen.getByText(/signed in as Marina Andrade/i)).toBeInTheDocument();
   });
 
   it("shows an error for invalid credentials and stays on the form", async () => {
@@ -137,16 +137,15 @@ describe("streaming a turn", () => {
     });
   });
 
-  it("shows the tools the gateway reported as available", async () => {
+  it("shows how many tools the caller is entitled to in the header", async () => {
     render(<App />);
     const user = await signIn();
     await user.type(screen.getByLabelText(/message/i), "show my invoice");
     await user.click(screen.getByRole("button", { name: /send/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/tools available to you \(2\)/)).toBeInTheDocument();
+      expect(screen.getByText(/2 tools available to you/)).toBeInTheDocument();
     });
-    expect(screen.getAllByText("list_plans").length).toBeGreaterThan(0);
   });
 
   it("shows which tool the assistant used and the turn cost", async () => {
@@ -158,7 +157,7 @@ describe("streaming a turn", () => {
     await waitFor(() => {
       expect(screen.getByText(/246 tokens/)).toBeInTheDocument();
     });
-    expect(screen.getByText("used")).toBeInTheDocument();
+    expect(screen.getByText("list_invoices")).toBeInTheDocument();
   });
 
   it("echoes the user message before the answer arrives", async () => {
@@ -272,10 +271,10 @@ describe("composer and suggestions", () => {
     });
   });
 
-  it("shows the assistant status in the header while answering", async () => {
+  it("shows the assistant status in the header after sign-in", async () => {
     render(<App />);
-    expect(screen.queryByText("ready")).toBeNull();
+    expect(screen.queryByText("online")).toBeNull();
     await signIn();
-    expect(screen.getByText("ready")).toBeInTheDocument();
+    expect(screen.getByText("online")).toBeInTheDocument();
   });
 });

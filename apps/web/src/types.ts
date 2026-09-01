@@ -23,6 +23,7 @@ export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   text: string;
+  time: string;
   toolCalls: string[];
   stats?: TurnStats;
   failed?: boolean;
