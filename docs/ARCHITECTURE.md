@@ -70,10 +70,10 @@ session token cannot reach the MCP server (wrong audience, wrong key, minutes to
 3. **Customer binding is deterministic.** The `customer_id` comes from the token, not
    from a model-produced argument. Reaching another customer requires the `customer:any`
    scope (an attendant grant) and is denied before the API is touched.
-3.5. **Public knowledge is retrieved, not invented.** How-to and policy questions go to
+4. **Public knowledge is retrieved, not invented.** How-to and policy questions go to
    `search_knowledge_base`, a scope-gated RAG tool that retrieves passages from a vector
    store by cosine similarity (with MMR), so the answer is grounded in a document.
-4. **Writes need confirmation.** `open_support_ticket` returns `confirmation_required`
+5. **Writes need confirmation.** `open_support_ticket` returns `confirmation_required`
    and performs no side effect until it is called again with `confirmed=true`.
 
 ## Streaming
