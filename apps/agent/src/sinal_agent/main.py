@@ -1,0 +1,112 @@
+"""Entrypoint HTTP do agente, com streaming por Server-Sent Events."""
+
+import json
+import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Header, HTTPException, Request, status
+from pydantic import BaseModel, Field
+from sse_starlette.sse import EventSourceResponse
+
+from sinal_agent import __version__
+from sinal_agent.config import get_settings
+from sinal_agent.models import describe_model
+from sinal_agent.observability import (
+    CORRELATION_HEADER,
+    CORRELATION_ID,
+    SESSION_ID,
+    configure_logging,
+    new_correlation_id,
+)
+from sinal_agent.service import AgentService, BudgetExceededError
+from sinal_agent.sessions import SessionStore
+
+logger = logging.getLogger("sinal.agent.http")
+
+
+class ChatRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=2000)
+    session_id: str = Field(min_length=6, max_length=128)
+    subject: str = Field(default="unknown", max_length=128)
+
+
+def create_app(service: AgentService | None = None) -> FastAPI:
+    settings = get_settings()
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        configure_logging(settings.service_name, settings.environment, settings.log_level)
+        logger.info("agent_started", extra={"version": __version__, **describe_model(settings)})
+        yield
+        logger.info("agent_stopped")
+
+    app = FastAPI(title="Sinal Agent", version=__version__, lifespan=lifespan)
+    app.state.service = service or AgentService(
+        settings=settings,
+        sessions=SessionStore(settings.session_ttl_s, settings.max_history_messages),
+    )
+
+    @app.get("/health", tags=["ops"])
+    async def health() -> dict[str, str]:
+        return {"status": "ok", "version": __version__}
+
+    @app.get("/v1/diagnostics", tags=["ops"])
+    async def diagnostics() -> dict[str, object]:
+        return {
+            "prompt_version": settings.prompt_version,
+            "max_tool_calls_per_turn": settings.max_tool_calls_per_turn,
+            "max_tokens_per_request": settings.max_tokens_per_request,
+            **describe_model(settings),
+        }
+
+    @app.post("/v1/chat/stream", tags=["chat"])
+    async def chat_stream(
+        payload: ChatRequest,
+        request: Request,
+        authorization: str | None = Header(default=None),
+        x_correlation_id: str | None = Header(default=None, alias=CORRELATION_HEADER),
+    ) -> EventSourceResponse:
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="bearer token do usuario final e obrigatorio",
+            )
+
+        correlation_id = x_correlation_id or new_correlation_id()
+        CORRELATION_ID.set(correlation_id)
+        SESSION_ID.set(payload.session_id)
+        token = authorization.removeprefix("Bearer ").strip()
+        agent_service: AgentService = request.app.state.service
+
+        async def publish() -> AsyncIterator[dict[str, str]]:
+            try:
+                async for event in agent_service.stream_turn(
+                    message=payload.message,
+                    token=token,
+                    session_id=payload.session_id,
+                    subject=payload.subject,
+                    correlation_id=correlation_id,
+                ):
+                    yield {"event": event["event"], "data": json.dumps(event["data"])}
+            except BudgetExceededError:
+                yield {"event": "done", "data": json.dumps({"stop_reason": "budget_exceeded"})}
+            except Exception as error:
+                logger.exception("turn_failed", extra={"reason": type(error).__name__})
+                yield {
+                    "event": "error",
+                    "data": json.dumps(
+                        {
+                            "code": "agent_failure",
+                            "message": "Nao foi possivel concluir o atendimento agora.",
+                        }
+                    ),
+                }
+                yield {"event": "done", "data": json.dumps({"stop_reason": "error"})}
+
+        return EventSourceResponse(publish(), headers={CORRELATION_HEADER: correlation_id})
+
+    return app
+
+
+app = create_app()

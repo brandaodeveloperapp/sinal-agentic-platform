@@ -16,7 +16,7 @@ export type Scope = (typeof SCOPES)[number];
 const claimsSchema = z.object({
   sub: z.string().min(1),
   scope: z.string().default(""),
-  customer_id: z.string().optional(),
+  customer_id: z.string().nullish(),
   actor: z.enum(["subscriber", "attendant", "service"]).default("subscriber"),
   channel: z.string().default("unknown"),
 });
@@ -78,7 +78,7 @@ export class TokenVerifier {
     return {
       subject: parsed.data.sub,
       scopes: new Set(granted),
-      customerId: parsed.data.customer_id,
+      customerId: parsed.data.customer_id ?? undefined,
       actor: parsed.data.actor,
       channel: parsed.data.channel,
     };
