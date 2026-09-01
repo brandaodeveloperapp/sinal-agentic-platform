@@ -30,9 +30,9 @@ if ! kubectl -n "${NS}" get secret sinal-api-telecom >/dev/null 2>&1; then
   kubectl -n "${NS}" create secret generic sinal-mcp-server \
     --from-literal=API_TELECOM_KEY="${WORKLOAD_KEY}" \
     --from-literal=JWT_SIGNING_SECRET="${JWT_SECRET}"
-  echo "secrets criados"
+  echo "secrets created"
 else
-  echo "secrets ja existem, mantidos"
+  echo "secrets already present, kept"
 fi
 
 log "apply"
@@ -45,12 +45,12 @@ kubectl -n "${NS}" rollout restart deployment/sinal-api-telecom deployment/sinal
 kubectl -n "${NS}" rollout status deployment/sinal-api-telecom --timeout=180s
 kubectl -n "${NS}" rollout status deployment/sinal-mcp-server --timeout=180s
 
-log "limpeza de artefatos antigos do sinal"
+log "cleaning up stale sinal artifacts"
 docker images "${REGISTRY}/sinal/*" --format '{{.Repository}}:{{.Tag}} {{.ID}}' \
   | grep -v ":${VERSION} " \
   | awk '{print $2}' \
   | xargs -r docker rmi -f || true
 docker image prune -f --filter "label=org.opencontainers.image.title=sinal" >/dev/null 2>&1 || true
 
-log "estado"
+log "state"
 kubectl -n "${NS}" get pods -o wide

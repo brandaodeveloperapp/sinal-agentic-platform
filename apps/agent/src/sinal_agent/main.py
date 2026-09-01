@@ -1,4 +1,4 @@
-"""Entrypoint HTTP do agente, com streaming por Server-Sent Events."""
+"""HTTP entrypoint for the agent, streaming over Server-Sent Events."""
 
 import json
 import logging
@@ -70,7 +70,7 @@ def create_app(service: AgentService | None = None) -> FastAPI:
         if not authorization or not authorization.startswith("Bearer "):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="bearer token do usuario final e obrigatorio",
+                detail="an end user bearer token is required",
             )
 
         correlation_id = x_correlation_id or new_correlation_id()
@@ -98,7 +98,7 @@ def create_app(service: AgentService | None = None) -> FastAPI:
                     "data": json.dumps(
                         {
                             "code": "agent_failure",
-                            "message": "Nao foi possivel concluir o atendimento agora.",
+                            "message": "The request could not be completed right now.",
                         }
                     ),
                 }

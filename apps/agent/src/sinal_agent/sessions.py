@@ -1,8 +1,8 @@
-"""Memoria de curto prazo por sessao.
+"""Short-term memory per session.
 
-Guarda apenas o historico da conversa corrente, com janela e expiracao. Nao ha
-memoria de longo prazo aqui de proposito: qualquer dado de cliente vem da
-ferramenta no momento da pergunta, nunca de um cache do agente.
+Holds only the current conversation history, with a window and an expiry. There is
+deliberately no long-term memory here: any customer data comes from a tool at the
+moment of the question, never from a cache inside the agent.
 """
 
 import time
@@ -19,7 +19,7 @@ class Session:
 
 
 class SessionStore:
-    """Armazenamento em memoria com janela de historico e TTL."""
+    """In-memory store with a bounded history window and a TTL."""
 
     def __init__(self, ttl_s: int, max_messages: int) -> None:
         self.ttl_s = ttl_s

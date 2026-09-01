@@ -65,8 +65,8 @@ describe("token verification", () => {
   });
 });
 
-describe("claims tolerantes", () => {
-  it("aceita customer_id nulo vindo do emissor", async () => {
+describe("lenient claims", () => {
+  it("accepts a null customer_id emitted by the issuer", async () => {
     const token = await issueToken({ subject: "svc", scopes: ["catalog:read"] }, options);
     const raw = JSON.parse(Buffer.from(token.split(".")[1] ?? "", "base64url").toString());
     expect(raw.customer_id === undefined || raw.customer_id === null).toBe(true);

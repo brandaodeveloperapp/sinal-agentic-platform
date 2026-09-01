@@ -1,4 +1,4 @@
-"""Configuracao do agente carregada do ambiente."""
+"""Agent configuration loaded from the environment."""
 
 from functools import lru_cache
 from typing import Literal
@@ -7,7 +7,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """Parametros de execucao do agente."""
+    """Runtime parameters for the agent."""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

@@ -27,8 +27,8 @@ export function createMcpServer(caller: CallerIdentity, deps: McpServerDeps): Mc
     { name: SERVER_NAME, version: SERVER_VERSION },
     {
       instructions:
-        "Capacidades corporativas da operadora Onda Telecom. As tools visiveis ja refletem a " +
-        "autorizacao do chamador: o que nao aparece aqui nao pode ser chamado.",
+        "Corporate capabilities of the Onda Telecom carrier. The visible tools already reflect " +
+        "the caller authorization: whatever is not listed here cannot be called.",
     },
   );
 
@@ -101,8 +101,8 @@ export function createMcpServer(caller: CallerIdentity, deps: McpServerDeps): Mc
       "plan-catalog",
       "sinal://catalog/plans",
       {
-        title: "Catalogo de planos",
-        description: "Planos comercializados, servidos como recurso MCP para grounding.",
+        title: "Plan catalogue",
+        description: "Plans on sale, served as an MCP resource for grounding.",
         mimeType: "application/json",
       },
       async (uri) => {
@@ -133,7 +133,7 @@ export function describeFailure(error: unknown): FailureDescription {
     return {
       outcome: "denied",
       code: error.code,
-      message: `Acesso negado: ${error.message}`,
+      message: `Access denied: ${error.message}`,
     };
   }
   if (error instanceof CircuitOpenError) {
@@ -141,22 +141,22 @@ export function describeFailure(error: unknown): FailureDescription {
       outcome: "circuit_open",
       code: "circuit_open",
       message:
-        "O sistema corporativo esta indisponivel no momento e as chamadas foram pausadas. " +
-        "Informe o usuario e sugira tentar novamente em instantes.",
+        "The corporate system is unavailable right now and calls are paused. Tell the user and " +
+        "suggest trying again shortly.",
     };
   }
   if (error instanceof UpstreamError) {
     const message =
       error.status === 404
-        ? `Registro nao encontrado: ${error.message}`
+        ? `Record not found: ${error.message}`
         : error.status === 504
-          ? "O sistema corporativo demorou demais para responder. Nenhum dado foi alterado."
-          : `Falha ao consultar o sistema corporativo (${error.status}). Nenhum dado foi alterado.`;
+          ? "The corporate system took too long to respond. No data was changed."
+          : `Failed to reach the corporate system (${error.status}). No data was changed.`;
     return { outcome: "upstream_error", code: `upstream_${error.status}`, message };
   }
   return {
     outcome: "unexpected",
     code: "unexpected",
-    message: "Falha inesperada ao executar a capacidade solicitada.",
+    message: "Unexpected failure while running the requested capability.",
   };
 }

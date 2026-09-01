@@ -9,7 +9,7 @@ def test_create_ticket_records_caller(client, auth):
         json={
             "customer_id": "CUS-1002",
             "category": "billing",
-            "summary": "Cliente relata cobranca duplicada na fatura de agosto",
+            "summary": "Customer reports a duplicate charge on the August invoice",
         },
         headers=auth,
     )
@@ -22,7 +22,7 @@ def test_create_ticket_records_caller(client, auth):
 def test_short_summary_is_rejected(client, auth):
     response = client.post(
         "/v1/tickets",
-        json={"customer_id": "CUS-1002", "category": "billing", "summary": "curto"},
+        json={"customer_id": "CUS-1002", "category": "billing", "summary": "short"},
         headers=auth,
     )
     assert response.status_code == 422
@@ -35,7 +35,7 @@ def test_ticket_for_unknown_customer_is_404(client, auth):
         json={
             "customer_id": "CUS-0000",
             "category": "network",
-            "summary": "Cliente inexistente abrindo chamado de rede",
+            "summary": "Unknown customer opening a network ticket",
         },
         headers=auth,
     )

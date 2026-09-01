@@ -1,72 +1,72 @@
 # sinal-agent
 
-Agente conversacional em Python com **Strands Agents**. Executa o agent loop,
-descobre ferramentas no MCP Server e transmite a resposta por SSE.
+Conversational agent in Python built on **Strands Agents**. It runs the agent loop,
+discovers tools on the MCP Server and streams the answer over SSE.
 
-## Identidade: o agente não tem credencial própria
+## Identity: the agent holds no credential of its own
 
-O agente repassa o **token do usuário final** para o MCP Server. Ele não possui
-uma credencial privilegiada de acesso a dados, então não existe caminho em que o
-agente enxergue mais do que o usuário logado enxerga.
+The agent forwards the **end user token** to the MCP Server. It has no privileged
+data credential, so there is no path where the agent sees more than the signed-in
+user sees.
 
 ```
-usuário (JWT) → BFF → agent (repassa o JWT) → MCP (autoriza) → API (credencial de workload)
+user (JWT) → BFF → agent (forwards the JWT) → MCP (authorizes) → API (workload credential)
 ```
 
-Três identidades distintas: a do usuário (JWT), a do agente (workload que fala
-com o MCP) e a da ferramenta (chave de workload que fala com a API corporativa).
+Three distinct identities: the user (JWT), the agent (workload talking to MCP) and
+the tool (workload key talking to the corporate API).
 
-## Provider de modelo é configuração
+## The model provider is configuration
 
-| `MODEL_PROVIDER` | Uso |
+| `MODEL_PROVIDER` | Use |
 |---|---|
-| `scripted` | Testes e avaliações. Determinístico, sem rede e sem chave. |
-| `anthropic` | Desenvolvimento local com `ANTHROPIC_API_KEY`. |
-| `bedrock` | Produção. Credencial por IAM role, `BEDROCK_MODEL_ID`. |
+| `scripted` | Tests and evaluations. Deterministic, no network, no key. |
+| `anthropic` | Local development with `ANTHROPIC_API_KEY`. |
+| `bedrock` | Production. Credentials through an IAM role, `BEDROCK_MODEL_ID`. |
 
-Trocar de provider ou de versão do modelo não altera uma linha de código. É o que
-torna rollback de modelo uma mudança de variável de ambiente.
+Switching provider or model version changes no code. That is what makes a model
+rollback an environment variable change.
 
-## Prompt versionado
+## Versioned prompt
 
-O prompt vive em `prompts.py` com uma versão explícita (`PROMPT_VERSION`). Mudou
-o prompt, muda a versão, a suite de avaliação roda contra ela, e o rollback é
-apontar a variável de volta para a versão anterior — sem rebuild da imagem.
+The prompt lives in `prompts.py` under an explicit version (`PROMPT_VERSION`).
+Change the prompt, bump the version, run the evaluation suite against it, and roll
+back by pointing the variable at the previous version — no image rebuild.
 
-## Controle de custo
+## Cost control
 
-- `MAX_TOKENS_PER_REQUEST` limita a geração.
-- `MAX_TOOL_CALLS_PER_TURN` corta o loop se o modelo insistir em chamar ferramentas.
-  O corte é determinístico, fora da decisão do modelo.
-- `MAX_HISTORY_MESSAGES` limita a janela de contexto reenviada a cada turno.
-- O evento `done` devolve `usage` com tokens de entrada e saída por turno.
+- `MAX_TOKENS_PER_REQUEST` caps generation.
+- `MAX_TOOL_CALLS_PER_TURN` cuts the loop if the model keeps calling tools. The cut
+  is deterministic, outside the model decision.
+- `MAX_HISTORY_MESSAGES` bounds the context resent on every turn.
+- The `done` event returns per-turn `usage` with input and output tokens.
 
 ## Streaming
 
-`POST /v1/chat/stream` responde SSE com quatro eventos:
+`POST /v1/chat/stream` answers SSE with four events:
 
-| Evento | Conteúdo |
+| Event | Payload |
 |---|---|
-| `ready` | ferramentas visíveis, versão do prompt, modelo |
-| `tool_call` | nome e id de cada ferramenta chamada |
-| `token` | fragmento de texto |
-| `done` | latência, chamadas, `stop_reason`, `usage` |
+| `ready` | visible tools, prompt version, model |
+| `tool_call` | name and id of each tool invoked |
+| `token` | text fragment |
+| `done` | latency, tool calls, `stop_reason`, `usage` |
 
-## Executar
+## Run
 
 ```bash
 uv venv --python 3.12 && uv pip install -e ".[dev]" --group dev
 .venv/bin/uvicorn sinal_agent.main:app --port 8083 --reload
 ```
 
-## Testes
+## Tests
 
 ```bash
 .venv/bin/python -m pytest
 ```
 
-26 testes (91%): loop do agente, repasse de identidade, orçamento de ferramentas,
-memória de sessão, seleção de provider, versionamento de prompt e a camada SSE
-(incluindo falha que não vaza detalhe interno).
+26 tests: agent loop, identity forwarding, tool budget, session memory, provider
+selection, prompt versioning and the SSE layer (including a failure that leaks no
+internal detail).
 
-Ponta a ponta contra o MCP e a API reais: `python infra/smoke/agent-e2e.py`.
+End-to-end against a real MCP and API: `python infra/smoke/agent-e2e.py`.

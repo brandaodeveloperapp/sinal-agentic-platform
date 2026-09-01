@@ -1,8 +1,8 @@
-"""Selecao do provider de modelo.
+"""Model provider selection.
 
-A escolha do provider e o identificador do modelo sao configuracao, nunca codigo.
-Trocar de Anthropic para Bedrock, ou trocar a versao do modelo, e mudanca de
-variavel de ambiente: nenhum caminho de execucao depende do provider.
+The provider and the model identifier are configuration, never code. Switching from
+Anthropic to Bedrock, or changing the model version, is an environment variable
+change: no execution path depends on the provider.
 """
 
 from typing import TYPE_CHECKING
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 def build_model(settings: Settings) -> "Model":
-    """Instancia o provider configurado."""
+    """Instantiate the configured provider."""
     if settings.model_provider == "scripted":
         from sinal_agent.models.scripted import ScriptedModel
 
@@ -26,7 +26,7 @@ def build_model(settings: Settings) -> "Model":
         from strands.models.anthropic import AnthropicModel
 
         if not settings.anthropic_api_key:
-            raise ValueError("ANTHROPIC_API_KEY ausente para model_provider=anthropic")
+            raise ValueError("ANTHROPIC_API_KEY missing for model_provider=anthropic")
         return AnthropicModel(
             client_args={"api_key": settings.anthropic_api_key},
             model_id=settings.model_id,
@@ -43,7 +43,7 @@ def build_model(settings: Settings) -> "Model":
 
 
 def describe_model(settings: Settings) -> dict[str, str]:
-    """Identificacao do modelo para log, trace e resposta de diagnostico."""
+    """Model identification for logs, traces and the diagnostics endpoint."""
     model_id = {
         "scripted": "scripted",
         "anthropic": settings.model_id,

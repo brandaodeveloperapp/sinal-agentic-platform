@@ -1,4 +1,4 @@
-"""Orquestracao do agente: monta o loop, conecta no MCP e emite eventos de streaming."""
+"""Agent orchestration: builds the loop, connects to MCP and emits streaming events."""
 
 import contextlib
 import logging
@@ -22,7 +22,7 @@ ToolProvider = Callable[[str, str, str], "contextlib.AbstractContextManager[list
 
 @dataclass
 class TurnBudget:
-    """Teto de custo de um turno, aplicado fora da decisao do modelo."""
+    """Per-turn cost ceiling, enforced outside the model decision."""
 
     max_tool_calls: int
     max_tokens: int
@@ -32,18 +32,18 @@ class TurnBudget:
 
 
 class BudgetExceededError(RuntimeError):
-    """Turno interrompido por estourar o teto de chamadas de ferramenta."""
+    """Turn aborted for exceeding the tool call ceiling."""
 
 
 @contextlib.contextmanager
 def mcp_tool_provider(
     settings: Settings, token: str, correlation_id: str, session_id: str
 ) -> Iterator[list[Any]]:
-    """Abre uma sessao MCP carregando a identidade do usuario final.
+    """Open an MCP session carrying the end user identity.
 
-    O agente nao possui credencial propria de acesso a dados: ele repassa o token
-    de quem esta conversando. Autorizacao acontece no MCP Server, que so devolve as
-    ferramentas permitidas para aquela identidade.
+    The agent holds no data credential of its own: it forwards the token of whoever
+    is talking. Authorization happens in the MCP Server, which only returns the tools
+    allowed for that identity.
     """
     from strands.tools.mcp import MCPClient
 
@@ -61,7 +61,7 @@ def mcp_tool_provider(
 
 
 class AgentService:
-    """Executa um turno de conversa e traduz o loop do agente em eventos."""
+    """Run one conversation turn and translate the agent loop into events."""
 
     def __init__(
         self,
@@ -153,7 +153,7 @@ class AgentService:
                             "event": "error",
                             "data": {
                                 "code": "tool_budget_exceeded",
-                                "message": "Limite de chamadas de ferramenta atingido neste turno.",
+                                "message": "Tool call limit reached for this turn.",
                             },
                         }
                         raise BudgetExceededError(tool_use_id)

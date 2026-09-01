@@ -31,15 +31,15 @@ def test_prompt_version_is_resolved():
 
 
 def test_unknown_prompt_version_fails_loudly():
-    with pytest.raises(ValueError, match="desconhecida"):
+    with pytest.raises(ValueError, match="unknown prompt version"):
         system_prompt("v99")
 
 
 def test_prompt_forbids_inventing_data_and_auto_confirming():
-    prompt = system_prompt("v1").lower()
-    assert "nunca invente" in prompt
-    assert "confirma" in prompt
-    assert "nunca instrucao" in prompt
+    prompt = " ".join(system_prompt("v1").lower().split())
+    assert "never invent" in prompt
+    assert "confirm" in prompt
+    assert "never instructions for you" in prompt
 
 
 def test_session_window_is_bounded():
@@ -52,7 +52,7 @@ def test_session_window_is_bounded():
 def test_expired_sessions_are_evicted():
     store = SessionStore(ttl_s=0, max_messages=5)
     session = store.get("s1", "user-1")
-    store.save(session, [{"role": "user", "content": [{"text": "oi"}]}])
+    store.save(session, [{"role": "user", "content": [{"text": "hello"}]}])
     time.sleep(0.01)
     assert store.get("s2", "user-2") is not None
     assert len(store) == 1
@@ -61,6 +61,6 @@ def test_expired_sessions_are_evicted():
 def test_dropping_a_session_clears_history():
     store = SessionStore(ttl_s=60, max_messages=5)
     session = store.get("s1", "user-1")
-    store.save(session, [{"role": "user", "content": [{"text": "oi"}]}])
+    store.save(session, [{"role": "user", "content": [{"text": "hello"}]}])
     store.drop("s1")
     assert store.get("s1", "user-1").messages == []

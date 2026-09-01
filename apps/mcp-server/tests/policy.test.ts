@@ -94,7 +94,7 @@ describe("customer binding", () => {
 describe("resource ownership", () => {
   it("rejects a resource owned by another customer", () => {
     try {
-      assertOwnership("CUS-2001", "CUS-1001", "fatura INV-1");
+      assertOwnership("CUS-2001", "CUS-1001", "invoice INV-1");
       throw new Error("expected denial");
     } catch (error) {
       expect((error as ToolAuthorizationError).code).toBe("resource_not_owned");
@@ -102,6 +102,6 @@ describe("resource ownership", () => {
   });
 
   it("accepts a resource owned by the resolved customer", () => {
-    expect(() => assertOwnership("CUS-1001", "CUS-1001", "fatura INV-1")).not.toThrow();
+    expect(() => assertOwnership("CUS-1001", "CUS-1001", "invoice INV-1")).not.toThrow();
   });
 });

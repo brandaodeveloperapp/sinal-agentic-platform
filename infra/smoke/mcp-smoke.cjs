@@ -52,7 +52,7 @@ async function main() {
   if (!SECRET) throw new Error("JWT_SIGNING_SECRET missing in environment");
 
   const health = await fetch(`${BASE}/health`).then((r) => r.json());
-  check("health responde ok", health.status === "ok", JSON.stringify(health));
+  check("health responds ok", health.status === "ok", JSON.stringify(health));
 
   const subscriber = mintToken({
     sub: "smoke-subscriber",
@@ -72,11 +72,11 @@ async function main() {
     },
     1,
   );
-  check("initialize devolve o servidor", init.result?.serverInfo?.name === "sinal-mcp-server", JSON.stringify(init.result?.serverInfo));
+  check("initialize returns the server", init.result?.serverInfo?.name === "sinal-mcp-server", JSON.stringify(init.result?.serverInfo));
 
   const list = await rpc(subscriber, "tools/list", {}, 2);
   const toolNames = (list.result?.tools || []).map((t) => t.name).sort();
-  check("subscriber enxerga 8 tools", toolNames.length === 8, toolNames.join(","));
+  check("subscriber sees 8 tools", toolNames.length === 8, toolNames.join(","));
 
   const ownInvoices = await rpc(
     subscriber,
@@ -85,7 +85,7 @@ async function main() {
     3,
   );
   const ownText = JSON.stringify(ownInvoices.result?.content || []);
-  check("le a propria fatura", ownText.includes("INV-2026-08-1001"), ownText.slice(0, 120));
+  check("reads its own invoice", ownText.includes("INV-2026-08-1001"), ownText.slice(0, 120));
 
   const escalation = await rpc(
     subscriber,
@@ -95,8 +95,8 @@ async function main() {
   );
   const escalationText = JSON.stringify(escalation.result?.content || []);
   check(
-    "escalacao de cliente negada",
-    escalation.result?.isError === true && escalationText.includes("Acesso negado"),
+    "customer escalation denied",
+    escalation.result?.isError === true && escalationText.includes("Access denied"),
     escalationText.slice(0, 160),
   );
 
@@ -105,12 +105,12 @@ async function main() {
     "tools/call",
     {
       name: "open_support_ticket",
-      arguments: { category: "billing", summary: "Teste de fumaca do fluxo de confirmacao" },
+      arguments: { category: "billing", summary: "Smoke check of the confirmation flow" },
     },
     5,
   );
   check(
-    "escrita exige confirmacao",
+    "write requires confirmation",
     JSON.stringify(write.result?.content || []).includes("confirmation_required"),
     "",
   );
@@ -119,7 +119,7 @@ async function main() {
   const limitedList = await rpc(limited, "tools/list", {}, 6);
   const limitedNames = (limitedList.result?.tools || []).map((t) => t.name);
   check(
-    "token restrito enxerga apenas list_plans",
+    "restricted token only sees list_plans",
     limitedNames.length === 1 && limitedNames[0] === "list_plans",
     limitedNames.join(","),
   );
@@ -127,7 +127,7 @@ async function main() {
   const forged = mintToken.call(null, { sub: "attacker", scope: "billing:read" });
   const tampered = `${forged.split(".").slice(0, 2).join(".")}.aaaa`;
   const rejected = await rpc(tampered, "tools/list", {}, 7);
-  check("token adulterado rejeitado", rejected.httpStatus === 401, String(rejected.httpStatus));
+  check("tampered token rejected", rejected.httpStatus === 401, String(rejected.httpStatus));
 
   const failed = results.filter((r) => !r.ok);
   for (const r of results) {

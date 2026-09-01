@@ -46,14 +46,16 @@ def test_diagnostics_exposes_prompt_and_model_without_secrets(client):
 
 
 def test_stream_requires_a_bearer_token(client):
-    response = client.post("/v1/chat/stream", json={"message": "oi", "session_id": "sess-000001"})
+    response = client.post(
+        "/v1/chat/stream", json={"message": "hello", "session_id": "sess-000001"}
+    )
     assert response.status_code == 401
 
 
 def test_stream_rejects_a_non_bearer_authorization(client):
     response = client.post(
         "/v1/chat/stream",
-        json={"message": "oi", "session_id": "sess-000001"},
+        json={"message": "hello", "session_id": "sess-000001"},
         headers={"authorization": "Basic abc"},
     )
     assert response.status_code == 401
@@ -71,8 +73,8 @@ def test_stream_validates_the_payload(client):
 def test_stream_emits_the_full_event_sequence(client):
     response = client.post(
         "/v1/chat/stream",
-        json={"message": "quero ver minha fatura", "session_id": "sess-000001"},
-        headers={"authorization": "Bearer token-do-usuario", "x-correlation-id": "corr-http"},
+        json={"message": "I want to see my invoice", "session_id": "sess-000001"},
+        headers={"authorization": "Bearer end-user-token", "x-correlation-id": "corr-http"},
     )
     assert response.status_code == 200
     assert response.headers["x-correlation-id"] == "corr-http"
@@ -85,14 +87,14 @@ def test_stream_emits_the_full_event_sequence(client):
     assert names[-1] == "done"
 
     text = "".join(data["text"] for name, data in events if name == "token")
-    assert text == "3 faturas, 1 em atraso."
+    assert text == "3 invoices, 1 overdue."
 
 
 def test_budget_error_closes_the_stream_cleanly():
     client = TestClient(create_app(ExplodingService(BudgetExceededError("limite"))))
     response = client.post(
         "/v1/chat/stream",
-        json={"message": "oi", "session_id": "sess-000002"},
+        json={"message": "hello", "session_id": "sess-000002"},
         headers={"authorization": "Bearer t"},
     )
     events = parse_sse(response.text)
@@ -106,7 +108,7 @@ def test_unexpected_failure_does_not_leak_details():
     )
     response = client.post(
         "/v1/chat/stream",
-        json={"message": "oi", "session_id": "sess-000003"},
+        json={"message": "hello", "session_id": "sess-000003"},
         headers={"authorization": "Bearer t"},
     )
     events = parse_sse(response.text)

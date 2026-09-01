@@ -1,3 +1,3 @@
-"""Agente conversacional Sinal."""
+"""Sinal conversational agent."""
 
 __version__ = "0.1.0"

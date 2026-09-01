@@ -18,25 +18,25 @@ CALLS: list[dict[str, Any]] = []
 
 @tool
 def list_invoices() -> str:
-    """Lista as faturas do cliente autenticado."""
+    """List the invoices of the authenticated customer."""
     CALLS.append({"tool": "list_invoices"})
-    return "3 faturas, 1 em atraso."
+    return "3 invoices, 1 overdue."
 
 
 @tool
 def list_plans() -> str:
-    """Lista os planos comercializados."""
+    """List the plans on sale."""
     CALLS.append({"tool": "list_plans"})
-    return "Onda Pos 50GB por R$ 99,90."
+    return "Onda Post 50GB for 99.90."
 
 
 @tool
 def open_support_ticket(category: str, summary: str, confirmed: bool = False) -> str:
-    """Abre um chamado de suporte apos confirmacao do cliente."""
+    """Open a support ticket after the customer confirms."""
     CALLS.append({"tool": "open_support_ticket", "confirmed": confirmed})
     if not confirmed:
-        return "confirmation_required: confirme com o cliente antes de abrir."
-    return "Chamado TCK-4701 aberto."
+        return "confirmation_required: confirm with the customer before opening."
+    return "Ticket TCK-4701 opened."
 
 
 FAKE_TOOLS = [list_invoices, list_plans, open_support_ticket]
@@ -90,7 +90,7 @@ def service(settings: Settings, tool_provider_spy: dict[str, Any]) -> AgentServi
 async def collect(service: AgentService, message: str, **overrides: Any) -> list[dict[str, Any]]:
     params = {
         "message": message,
-        "token": "token-do-usuario",
+        "token": "end-user-token",
         "session_id": "sess-123456",
         "subject": "user-1",
         "correlation_id": "corr-1",

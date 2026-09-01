@@ -1,8 +1,8 @@
-"""Provider de modelo deterministico.
+"""Deterministic model provider.
 
-Existe por dois motivos: rodar a suite de testes e as avaliacoes sem depender de
-credencial ou de rede, e dar um baseline reproduzivel para os testes de regressao
-de prompt e de ferramenta.
+It exists for two reasons: running the test suite and the evaluations without
+depending on a credential or on the network, and giving prompt and tool regression
+tests a reproducible baseline.
 """
 
 import json
@@ -18,7 +18,7 @@ T = TypeVar("T")
 
 @dataclass
 class ScriptedRule:
-    """Liga um padrao na mensagem do usuario a uma ferramenta esperada."""
+    """Maps a pattern in the user message to the tool expected for it."""
 
     pattern: str
     tool_name: str
@@ -26,22 +26,22 @@ class ScriptedRule:
 
 
 DEFAULT_RULES: list[ScriptedRule] = [
-    ScriptedRule(r"\b(fatura|boleto|cobran)", "list_invoices"),
-    ScriptedRule(r"\b(consumo|internet|gb|dados)\b", "get_line_usage", {"msisdn": "5511970001001"}),
-    ScriptedRule(r"\b(plano|planos|pacote)\b", "list_plans"),
+    ScriptedRule(r"\b(invoice|bill|billing|charge)", "list_invoices"),
+    ScriptedRule(r"\b(usage|data|internet|gb)\b", "get_line_usage", {"msisdn": "5511970001001"}),
+    ScriptedRule(r"\b(plan|plans|package)\b", "list_plans"),
     ScriptedRule(
-        r"\b(chamado|reclama|abrir)\b",
+        r"\b(ticket|complaint|open)\b",
         "open_support_ticket",
-        {"category": "billing", "summary": "Cliente relata divergencia na fatura"},
+        {"category": "billing", "summary": "Customer reports a mismatch on the invoice"},
     ),
-    ScriptedRule(r"\b(linha|linhas|numero)\b", "list_customer_lines"),
+    ScriptedRule(r"\b(line|lines|number)\b", "list_customer_lines"),
 ]
 
-FALLBACK_TEXT = "Posso ajudar com planos, consumo, faturas e chamados. O que voce precisa?"
+FALLBACK_TEXT = "I can help with plans, usage, invoices and support tickets. What do you need?"
 
 
 class ScriptedModel(Model):
-    """Modelo que escolhe ferramenta por regra e resume o resultado sem LLM."""
+    """Model that picks a tool by rule and echoes the tool result without an LLM."""
 
     def __init__(
         self,

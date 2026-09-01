@@ -9,8 +9,8 @@ const customerIdArg = {
     .string()
     .optional()
     .describe(
-      "Identificador do cliente. Omita para usar o cliente vinculado ao token. " +
-        "Informar outro cliente exige escopo customer:any e sera negado caso contrario.",
+      "Customer identifier. Omit it to use the customer bound to the caller token. " +
+        "Naming a different customer requires the customer:any scope and is denied otherwise.",
     ),
 };
 
@@ -74,8 +74,8 @@ interface PlanPayload {
 export const TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: "list_plans",
-    title: "Listar planos",
-    description: "Lista os planos comercializados pela operadora. Nao expoe dado de cliente algum.",
+    title: "List plans",
+    description: "Lists the plans the carrier sells. Exposes no customer data at all.",
     inputSchema: {},
     readOnly: true,
     handler: async (_args, { client, caller }) => {
@@ -83,13 +83,13 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         path: "/v1/plans",
         actingUser: caller.subject,
       });
-      return { summary: `${plans.length} planos disponiveis.`, data: { plans } };
+      return { summary: `${plans.length} plans available.`, data: { plans } };
     },
   },
   {
     name: "get_customer_profile",
-    title: "Consultar cadastro do cliente",
-    description: "Retorna o cadastro do cliente com documento e e-mail mascarados.",
+    title: "Get customer profile",
+    description: "Returns the customer record with document and email masked.",
     inputSchema: { ...customerIdArg },
     readOnly: true,
     handler: async (args, { client, caller }) => {
@@ -99,15 +99,15 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         actingUser: caller.subject,
       });
       return {
-        summary: `Cliente ${customer.full_name}, segmento ${customer.segment}.`,
+        summary: `Customer ${customer.full_name}, segment ${customer.segment}.`,
         data: { customer: { ...customer, email: maskEmail(customer.email) } },
       };
     },
   },
   {
     name: "list_customer_lines",
-    title: "Listar linhas do cliente",
-    description: "Lista as linhas moveis do cliente com plano e situacao atual.",
+    title: "List customer lines",
+    description: "Lists the mobile lines owned by the customer, with plan and current status.",
     inputSchema: { ...customerIdArg },
     readOnly: true,
     handler: async (args, { client, caller }) => {
@@ -117,18 +117,18 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         actingUser: caller.subject,
       });
       return {
-        summary: `${lines.length} linhas encontradas para ${customerId}.`,
+        summary: `${lines.length} lines found for ${customerId}.`,
         data: { lines },
       };
     },
   },
   {
     name: "get_line_usage",
-    title: "Consultar consumo da linha",
+    title: "Get line usage",
     description:
-      "Retorna o consumo do ciclo vigente de uma linha. A linha precisa pertencer ao cliente autorizado.",
+      "Returns the current cycle usage for a line. The line must belong to the authorized customer.",
     inputSchema: {
-      msisdn: z.string().min(10).max(15).describe("Numero da linha em E.164 sem o sinal de mais"),
+      msisdn: z.string().min(10).max(15).describe("Line number in E.164 without the plus sign"),
       ...customerIdArg,
     },
     readOnly: true,
@@ -141,7 +141,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         actingUser: caller.subject,
       });
       const owned = lines.find((line) => line.msisdn === msisdn);
-      assertOwnership(owned?.customer_id ?? "", customerId, `linha ${msisdn}`);
+      assertOwnership(owned?.customer_id ?? "", customerId, `line ${msisdn}`);
 
       const usage = await client.request<UsagePayload>({
         path: `/v1/lines/${encodeURIComponent(msisdn)}/usage`,
@@ -150,18 +150,18 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       const remaining = usage.data_allowance_gb - Number(usage.data_used_gb);
       return {
         summary:
-          `Linha ${msisdn} usou ${usage.data_used_gb}GB de ${usage.data_allowance_gb}GB, ` +
-          `restam ${remaining.toFixed(1)}GB.`,
+          `Line ${msisdn} used ${usage.data_used_gb}GB of ${usage.data_allowance_gb}GB, ` +
+          `${remaining.toFixed(1)}GB remaining.`,
         data: { usage, data_remaining_gb: Number(remaining.toFixed(2)) },
       };
     },
   },
   {
     name: "list_invoices",
-    title: "Listar faturas",
-    description: "Lista as faturas do cliente, com filtro opcional por situacao.",
+    title: "List invoices",
+    description: "Lists the customer invoices, optionally filtered by status.",
     inputSchema: {
-      status: z.enum(["open", "paid", "overdue"]).optional().describe("Filtro por situacao"),
+      status: z.enum(["open", "paid", "overdue"]).optional().describe("Filter by status"),
       ...customerIdArg,
     },
     readOnly: true,
@@ -176,18 +176,18 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       return {
         summary:
           overdue.length > 0
-            ? `${invoices.length} faturas, ${overdue.length} em atraso.`
-            : `${invoices.length} faturas, nenhuma em atraso.`,
+            ? `${invoices.length} invoices, ${overdue.length} overdue.`
+            : `${invoices.length} invoices, none overdue.`,
         data: { invoices },
       };
     },
   },
   {
     name: "get_invoice_details",
-    title: "Detalhar fatura",
-    description: "Retorna uma fatura especifica. A fatura precisa pertencer ao cliente autorizado.",
+    title: "Get invoice details",
+    description: "Returns one invoice. The invoice must belong to the authorized customer.",
     inputSchema: {
-      invoice_id: z.string().min(3).describe("Identificador da fatura"),
+      invoice_id: z.string().min(3).describe("Invoice identifier"),
       ...customerIdArg,
     },
     readOnly: true,
@@ -197,19 +197,19 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         path: `/v1/invoices/${encodeURIComponent(args.invoice_id as string)}`,
         actingUser: caller.subject,
       });
-      assertOwnership(invoice.customer_id, customerId, `fatura ${invoice.id}`);
+      assertOwnership(invoice.customer_id, customerId, `invoice ${invoice.id}`);
       return {
         summary:
-          `Fatura ${invoice.id} de ${invoice.reference_month}: R$ ${invoice.amount}, ` +
-          `situacao ${invoice.status}.`,
+          `Invoice ${invoice.id} for ${invoice.reference_month}: ${invoice.amount}, ` +
+          `status ${invoice.status}.`,
         data: { invoice },
       };
     },
   },
   {
     name: "list_support_tickets",
-    title: "Listar chamados",
-    description: "Lista os chamados de suporte abertos pelo cliente.",
+    title: "List support tickets",
+    description: "Lists the support tickets opened by the customer.",
     inputSchema: { ...customerIdArg },
     readOnly: true,
     handler: async (args, { client, caller }) => {
@@ -219,7 +219,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         actingUser: caller.subject,
       });
       return {
-        summary: `${tickets.length} chamados registrados.`,
+        summary: `${tickets.length} tickets on record.`,
         data: {
           tickets: tickets.map((ticket) => ({
             ...ticket,
@@ -231,19 +231,19 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     name: "open_support_ticket",
-    title: "Abrir chamado",
+    title: "Open support ticket",
     description:
-      "Abre um chamado de suporte. Operacao de escrita: exige confirmacao explicita do usuario " +
-      "antes de ser efetivada.",
+      "Opens a support ticket. Write operation: requires explicit user confirmation before it " +
+      "takes effect.",
     inputSchema: {
       category: z
         .enum(["billing", "network", "device", "plan_change"])
-        .describe("Categoria do chamado"),
-      summary: z.string().min(10).max(280).describe("Resumo do problema relatado"),
+        .describe("Ticket category"),
+      summary: z.string().min(10).max(280).describe("Short description of the reported problem"),
       confirmed: z
         .boolean()
         .default(false)
-        .describe("Deve ser true apenas apos o usuario confirmar a abertura do chamado."),
+        .describe("Set to true only after the user has explicitly confirmed opening the ticket."),
       ...customerIdArg,
     },
     readOnly: false,
@@ -254,8 +254,8 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       if (args.confirmed !== true) {
         return {
           summary:
-            "Confirmacao pendente. Pergunte ao usuario se pode abrir o chamado e chame a tool " +
-            "novamente com confirmed=true apos a resposta afirmativa.",
+            "Confirmation pending. Ask the user whether the ticket may be opened and call this " +
+            "tool again with confirmed=true once they agree.",
           data: {
             status: "confirmation_required",
             preview: { customer_id: customerId, category: args.category, summary },
@@ -270,7 +270,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         actingUser: caller.subject,
       });
       return {
-        summary: `Chamado ${ticket.id} aberto na categoria ${ticket.category}.`,
+        summary: `Ticket ${ticket.id} opened under category ${ticket.category}.`,
         data: { status: "created", ticket },
       };
     },

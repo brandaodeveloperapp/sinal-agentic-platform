@@ -1,4 +1,4 @@
-"""Log estruturado e propagacao de correlation-id."""
+"""Structured logging and correlation-id propagation."""
 
 import logging
 import sys
@@ -15,7 +15,7 @@ SESSION_HEADER = "x-session-id"
 
 
 class ContextFilter(logging.Filter):
-    """Injeta identificadores de rastreio em cada registro."""
+    """Inject tracing identifiers into every log record."""
 
     def __init__(self, service_name: str, environment: str) -> None:
         super().__init__()

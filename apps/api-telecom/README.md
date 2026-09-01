@@ -1,9 +1,9 @@
 # sinal-api-telecom
 
-API REST corporativa da operadora fictícia Onda Telecom. É o sistema de registro
-por trás das tools MCP — o agente nunca a chama diretamente.
+Corporate REST API of the fictional carrier Onda Telecom. It is the system of record
+behind the MCP tools — the agent never calls it directly.
 
-## Executar
+## Run
 
 ```bash
 uv venv --python 3.12
@@ -11,32 +11,32 @@ uv pip install -e ".[dev]" --group dev
 .venv/bin/uvicorn sinal_api.main:app --port 8081 --reload
 ```
 
-Documentação interativa em `http://localhost:8081/docs`.
+Interactive docs at `http://localhost:8081/docs`.
 
-## Autenticação
+## Authentication
 
-A API aceita apenas uma **credencial de workload** (`x-api-key`), nunca o token
-do usuário final. A identidade do usuário viaja em `x-acting-user` apenas para
-auditoria: a decisão de autorização acontece na camada MCP, antes da chamada.
+The API accepts only a **workload credential** (`x-api-key`), never an end user
+token. The user identity travels in `x-acting-user` for auditing only: the
+authorization decision happens in the MCP layer, before the call is made.
 
-## Injeção de falhas
+## Fault injection
 
-Fora de produção, o header `x-simulate-fault` força comportamentos usados nos
-testes de resiliência do cliente MCP:
+Outside production, the `x-simulate-fault` header forces the behaviours used by the
+resilience tests of the MCP client:
 
-| Valor | Efeito |
+| Value | Effect |
 |---|---|
-| `timeout` | Trava a resposta por 30s |
-| `server-error` | Retorna 502 |
-| `rate-limit` | Retorna 429 com `Retry-After` |
+| `timeout` | Holds the response for 30s |
+| `server-error` | Returns 502 |
+| `rate-limit` | Returns 429 with `Retry-After` |
 
-## Contrato
+## Contract
 
-`python scripts/export_openapi.py` regenera
-`packages/contracts/openapi/onda-telecom.openapi.json`, consumido pelos testes
-de contrato do MCP Server.
+`python scripts/export_openapi.py` regenerates
+`packages/contracts/openapi/onda-telecom.openapi.json`, consumed by the contract
+tests of the MCP Server.
 
-## Testes
+## Tests
 
 ```bash
 .venv/bin/python -m pytest

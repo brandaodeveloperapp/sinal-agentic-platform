@@ -15,7 +15,7 @@ def events_of(events: list[dict[str, Any]], name: str) -> list[dict[str, Any]]:
 
 
 async def test_turn_announces_available_tools(service):
-    events = await collect(service, "oi")
+    events = await collect(service, "hello")
     ready = events_of(events, "ready")[0]
     assert ready["tools"] == ["list_invoices", "list_plans", "open_support_ticket"]
     assert ready["prompt_version"] == "v1"
@@ -23,27 +23,27 @@ async def test_turn_announces_available_tools(service):
 
 
 async def test_end_user_token_is_forwarded_to_the_tool_layer(service, tool_provider_spy):
-    await collect(service, "oi", token="jwt-do-cliente")
-    assert tool_provider_spy["token"] == "jwt-do-cliente"
+    await collect(service, "hello", token="customer-jwt")
+    assert tool_provider_spy["token"] == "customer-jwt"
     assert tool_provider_spy["correlation_id"] == "corr-1"
     assert tool_provider_spy["session_id"] == "sess-123456"
 
 
 async def test_invoice_question_calls_the_invoice_tool(service, calls):
-    events = await collect(service, "quero ver minha fatura")
+    events = await collect(service, "I want to see my invoice")
     assert [call["tool"] for call in calls] == ["list_invoices"]
     assert events_of(events, "tool_call")[0]["name"] == "list_invoices"
 
 
 async def test_streams_text_tokens_before_finishing(service):
-    events = await collect(service, "quero ver minha fatura")
+    events = await collect(service, "I want to see my invoice")
     tokens = events_of(events, "token")
     assert tokens
-    assert "".join(token["text"] for token in tokens) == "3 faturas, 1 em atraso."
+    assert "".join(token["text"] for token in tokens) == "3 invoices, 1 overdue."
 
 
 async def test_done_event_reports_usage_and_cost_inputs(service):
-    events = await collect(service, "quais os planos")
+    events = await collect(service, "which plans do you have")
     done = events_of(events, "done")[0]
     assert done["tool_calls"] == 1
     assert done["usage"]["total_tokens"] > 0
@@ -52,22 +52,22 @@ async def test_done_event_reports_usage_and_cost_inputs(service):
 
 
 async def test_write_tool_is_never_auto_confirmed(service, calls):
-    await collect(service, "quero abrir um chamado")
+    await collect(service, "I want to open a ticket")
     ticket_calls = [call for call in calls if call["tool"] == "open_support_ticket"]
     assert ticket_calls
     assert all(call["confirmed"] is False for call in ticket_calls)
 
 
 async def test_history_is_kept_between_turns(service):
-    await collect(service, "quais os planos")
-    await collect(service, "e a fatura")
+    await collect(service, "which plans do you have")
+    await collect(service, "and the invoice")
     session = service.sessions.get("sess-123456", "user-1")
     assert len(session.messages) >= 2
 
 
 async def test_history_is_not_shared_between_subjects(service):
-    await collect(service, "quais os planos")
-    await collect(service, "quais os planos", subject="outro-usuario")
+    await collect(service, "which plans do you have")
+    await collect(service, "which plans do you have", subject="another-user")
     session = service.sessions.get("sess-123456", "user-1")
     assert session.messages == []
 
@@ -87,7 +87,7 @@ async def test_tool_budget_stops_the_turn(settings, tool_provider_spy):
     collected: list[dict[str, Any]] = []
     with pytest.raises(BudgetExceededError):
         async for event in service.stream_turn(
-            message="quero ver minha fatura",
+            message="I want to see my invoice",
             token="t",
             session_id="sess-budget",
             subject="user-1",

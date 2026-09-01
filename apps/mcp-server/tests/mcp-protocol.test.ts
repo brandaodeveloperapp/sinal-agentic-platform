@@ -152,7 +152,7 @@ describe("tool invocation", () => {
   it("returns catalogue data for an authorized caller", async () => {
     const client = await connect(["catalog:read"]);
     const result = await client.callTool({ name: "list_plans", arguments: {} });
-    expect(textOf(result)).toContain("Onda Pos 50GB");
+    expect(textOf(result)).toContain("Onda Post 50GB");
     await client.close();
   });
 
@@ -180,7 +180,7 @@ describe("tool invocation", () => {
       arguments: { customer_id: "CUS-2001" },
     });
     expect(result.isError).toBe(true);
-    expect(textOf(result)).toContain("Acesso negado");
+    expect(textOf(result)).toContain("Access denied");
     expect(calls.some((call) => call.path.includes("CUS-2001"))).toBe(false);
     await client.close();
   });
@@ -196,7 +196,7 @@ describe("tool invocation", () => {
       arguments: { customer_id: "CUS-2001" },
     });
     expect(result.isError).toBeFalsy();
-    expect(textOf(result)).toContain("Verde Campo");
+    expect(textOf(result)).toContain("Green Field");
     await client.close();
   });
 
@@ -207,7 +207,7 @@ describe("tool invocation", () => {
       arguments: { invoice_id: "INV-2026-08-2001" },
     });
     expect(result.isError).toBe(true);
-    expect(textOf(result)).toContain("Acesso negado");
+    expect(textOf(result)).toContain("Access denied");
     await client.close();
   });
 
@@ -226,8 +226,8 @@ describe("tool invocation", () => {
     const client = await connect(SUBSCRIBER_SCOPES, "CUS-1001");
     const result = await client.callTool({ name: "get_customer_profile", arguments: {} });
     const text = textOf(result);
-    expect(text).toContain("***@exemplo.test");
-    expect(text).not.toContain("marina.andrade@exemplo.test");
+    expect(text).toContain("***@example.test");
+    expect(text).not.toContain("marina.andrade@example.test");
     await client.close();
   });
 
@@ -235,7 +235,7 @@ describe("tool invocation", () => {
     const client = await connect(SUBSCRIBER_SCOPES, "CUS-1001");
     const result = await client.callTool({ name: "list_support_tickets", arguments: {} });
     const text = textOf(result);
-    expect(text).toContain("[conteudo removido]");
+    expect(text).toContain("[content removed]");
     expect(text.toLowerCase()).not.toContain("ignore all previous");
     await client.close();
   });
@@ -244,7 +244,7 @@ describe("tool invocation", () => {
     const client = await connect(SUBSCRIBER_SCOPES, "CUS-1001");
     const result = await client.callTool({
       name: "open_support_ticket",
-      arguments: { category: "billing", summary: "curto" },
+      arguments: { category: "billing", summary: "short" },
     });
     expect(result.isError).toBe(true);
     await client.close();
@@ -256,7 +256,7 @@ describe("human in the loop on write operations", () => {
     const client = await connect(SUBSCRIBER_SCOPES, "CUS-1001");
     const result = await client.callTool({
       name: "open_support_ticket",
-      arguments: { category: "billing", summary: "Cobranca duplicada na fatura de agosto" },
+      arguments: { category: "billing", summary: "Duplicate charge on the August invoice" },
     });
     expect(textOf(result)).toContain("confirmation_required");
     expect(calls.some((call) => call.method === "POST")).toBe(false);
@@ -269,7 +269,7 @@ describe("human in the loop on write operations", () => {
       name: "open_support_ticket",
       arguments: {
         category: "billing",
-        summary: "Cobranca duplicada na fatura de agosto",
+        summary: "Duplicate charge on the August invoice",
         confirmed: true,
       },
     });
@@ -285,7 +285,7 @@ describe("human in the loop on write operations", () => {
       name: "open_support_ticket",
       arguments: {
         category: "billing",
-        summary: "Tentativa de abrir chamado para outro cliente",
+        summary: "Attempt to open a ticket for another customer",
         customer_id: "CUS-2001",
         confirmed: true,
       },

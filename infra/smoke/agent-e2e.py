@@ -1,7 +1,7 @@
-"""Teste ponta a ponta: agente real -> MCP real -> API corporativa real.
+"""End-to-end check: real agent -> real MCP -> real corporate API.
 
-Nao usa mock em camada nenhuma. Sobe um turno de conversa para cada cenario e
-verifica o que chegou do outro lado, incluindo o que deve ser negado.
+No layer is mocked. It runs one conversation turn per scenario and asserts what came
+back from the other side, including what must be denied.
 """
 
 import asyncio
@@ -80,35 +80,35 @@ async def main() -> int:
     subscriber = mint(full_scopes, "CUS-1001", "e2e-subscriber")
     limited = mint(["catalog:read"], None, "e2e-limited")
 
-    turn = await run_turn(service, "quero ver minha fatura", subscriber, "sess-e2e-1")
+    turn = await run_turn(service, "I want to see my invoice", subscriber, "sess-e2e-1")
     tools_seen = turn["ready"][0]["tools"]
-    check("MCP entrega 8 tools ao agente", len(tools_seen) == 8, ",".join(sorted(tools_seen)))
+    check("MCP hands 8 tools to the agent", len(tools_seen) == 8, ",".join(sorted(tools_seen)))
     check(
-        "agente chamou list_invoices",
+        "agent called list_invoices",
         any(call["name"] == "list_invoices" for call in turn["tool_call"]),
         json.dumps(turn["tool_call"]),
     )
     answer = "".join(part["text"] for part in turn["token"])
-    check("resposta veio do dado real da API", "fatura" in answer.lower(), answer[:80])
-    check("done reporta uso de tokens", turn["done"][0]["usage"]["total_tokens"] > 0, "")
+    check("answer came from real API data", "invoice" in answer.lower(), answer[:80])
+    check("done reports token usage", turn["done"][0]["usage"]["total_tokens"] > 0, "")
 
-    turn = await run_turn(service, "quais os planos disponiveis", limited, "sess-e2e-2")
+    turn = await run_turn(service, "which plans are available", limited, "sess-e2e-2")
     check(
-        "token restrito so enxerga list_plans",
+        "restricted token only sees list_plans",
         turn["ready"][0]["tools"] == ["list_plans"],
         ",".join(turn["ready"][0]["tools"]),
     )
     answer = "".join(part["text"] for part in turn["token"])
-    check("catalogo respondido pela tool", "plano" in answer.lower(), answer[:80])
+    check("catalogue answered by the tool", "plan" in answer.lower(), answer[:80])
 
-    turn = await run_turn(service, "quanto de internet ja usei", subscriber, "sess-e2e-3")
+    turn = await run_turn(service, "how much data have I used", subscriber, "sess-e2e-3")
     answer = "".join(part["text"] for part in turn["token"])
-    check("consumo veio da linha do cliente", "gb" in answer.lower(), answer[:90])
+    check("usage came from the customer line", "gb" in answer.lower(), answer[:90])
 
-    turn = await run_turn(service, "quero abrir um chamado", subscriber, "sess-e2e-4")
+    turn = await run_turn(service, "I want to open a ticket", subscriber, "sess-e2e-4")
     answer = "".join(part["text"] for part in turn["token"])
     check(
-        "escrita parou na confirmacao",
+        "write stopped at confirmation",
         "confirm" in answer.lower(),
         answer[:90],
     )
