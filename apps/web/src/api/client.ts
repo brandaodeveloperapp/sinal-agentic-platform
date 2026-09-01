@@ -94,6 +94,12 @@ function toTurnEvent(frame: SseFrame): TurnEvent | null {
   switch (frame.event) {
     case "ready":
       return { type: "ready", tools: (data.tools as string[]) ?? [], model: String(data.model_id ?? "") };
+    case "route":
+      return {
+        type: "route",
+        specialist: String(data.specialist ?? ""),
+        tools: (data.tools as string[]) ?? [],
+      };
     case "tool_call":
       return { type: "tool_call", name: String(data.name ?? "") };
     case "token":

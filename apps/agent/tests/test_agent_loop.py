@@ -114,3 +114,24 @@ async def test_third_turn_still_routes_to_the_right_tool(service, calls):
     await collect(service, "which plans do you have")
     await collect(service, "I want to see my invoice")
     assert [call["tool"] for call in calls] == ["list_invoices", "list_plans", "list_invoices"]
+
+
+async def test_route_event_names_the_specialist_and_its_tools(service):
+    events = await collect(service, "I want to see my invoice")
+    route = events_of(events, "route")[0]
+    assert route["specialist"] == "billing"
+    assert "list_invoices" in route["tools"]
+    assert "open_support_ticket" not in route["tools"]
+
+
+async def test_ready_still_reports_the_full_entitlement(service):
+    events = await collect(service, "I want to see my invoice")
+    ready = events_of(events, "ready")[0]
+    assert set(ready["tools"]) == {"list_invoices", "list_plans", "open_support_ticket"}
+
+
+async def test_ticket_turn_routes_to_technical_specialist(service):
+    events = await collect(service, "I want to open a ticket")
+    route = events_of(events, "route")[0]
+    assert route["specialist"] == "technical"
+    assert "open_support_ticket" in route["tools"]

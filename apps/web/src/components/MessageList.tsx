@@ -36,7 +36,7 @@ export function MessageList({ messages, streaming, onPickSuggestion }: MessageLi
       <span className="day-pill">Today</span>
       {messages.map((message) => (
         <Fragment key={message.id}>
-          <ToolNote tools={message.toolCalls} />
+          <ToolNote tools={message.toolCalls} specialist={message.specialist} />
           <MessageBubble message={message} streaming={streaming} />
         </Fragment>
       ))}

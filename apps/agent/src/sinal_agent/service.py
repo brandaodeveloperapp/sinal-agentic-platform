@@ -14,6 +14,7 @@ from sinal_agent.models import build_model, describe_model
 from sinal_agent.observability import CORRELATION_HEADER, SESSION_HEADER
 from sinal_agent.prompts import system_prompt
 from sinal_agent.sessions import SessionStore
+from sinal_agent.specialists import triage
 
 logger = logging.getLogger("sinal.agent")
 
@@ -100,10 +101,24 @@ class AgentService:
 
         with self._tool_provider(token, correlation_id, session_id) as tools:
             tool_names = [getattr(tool, "tool_name", str(tool)) for tool in tools]
+
+            # Triage routes the turn to a specialist configured with a focused prompt and
+            # a subset of the tools the caller is entitled to. `ready` reports the full
+            # entitlement; `route` reports the specialist and the tools it will use.
+            specialist = triage(message)
+            specialist_tool_names = specialist.allowed(tool_names)
+            specialist_tools = [
+                tool
+                for tool in tools
+                if getattr(tool, "tool_name", str(tool)) in specialist_tool_names
+            ]
+
             logger.info(
                 "turn_started",
                 extra={
                     "available_tools": tool_names,
+                    "specialist": specialist.name,
+                    "specialist_tools": specialist_tool_names,
                     "prompt_version": self.settings.prompt_version,
                     **self.model_info,
                 },
@@ -116,11 +131,15 @@ class AgentService:
                     **self.model_info,
                 },
             }
+            yield {
+                "event": "route",
+                "data": {"specialist": specialist.name, "tools": specialist_tool_names},
+            }
 
             agent = Agent(
                 model=self.model,
-                tools=tools,
-                system_prompt=self.instructions,
+                tools=specialist_tools,
+                system_prompt=f"{self.instructions}\n\n{specialist.instructions}",
                 messages=list(session.messages),
                 callback_handler=None,
                 trace_attributes={
@@ -128,6 +147,7 @@ class AgentService:
                     "user.id": subject,
                     "correlation.id": correlation_id,
                     "prompt.version": self.settings.prompt_version,
+                    "specialist": specialist.name,
                 },
             )
 

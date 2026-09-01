@@ -8,6 +8,7 @@ export interface AuthenticatedUser {
 
 export type TurnEvent =
   | { type: "ready"; tools: string[]; model: string }
+  | { type: "route"; specialist: string; tools: string[] }
   | { type: "tool_call"; name: string }
   | { type: "token"; text: string }
   | { type: "done"; stopReason: string; latencyMs: number; totalTokens: number }
@@ -25,6 +26,7 @@ export interface ChatMessage {
   text: string;
   time: string;
   toolCalls: string[];
+  specialist?: string;
   stats?: TurnStats;
   failed?: boolean;
 }

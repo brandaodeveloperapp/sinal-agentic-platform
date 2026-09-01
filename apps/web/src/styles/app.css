@@ -653,3 +653,10 @@
     padding-right: var(--space-3);
   }
 }
+
+.tool-note__agent {
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: capitalize;
+  margin-right: 2px;
+}

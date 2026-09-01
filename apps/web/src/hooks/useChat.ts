@@ -65,6 +65,12 @@ export function useChat(token: string | null) {
             case "ready":
               setState((current) => ({ ...current, availableTools: event.tools }));
               break;
+            case "route":
+              patchAssistant(assistantId, (message) => ({
+                ...message,
+                specialist: event.specialist,
+              }));
+              break;
             case "tool_call":
               patchAssistant(assistantId, (message) => ({
                 ...message,

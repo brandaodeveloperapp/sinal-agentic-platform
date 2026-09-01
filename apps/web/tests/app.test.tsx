@@ -26,6 +26,7 @@ function sseBody(chunks: string[]): ReadableStream<Uint8Array> {
 
 const DEFAULT_FRAMES = [
   'event: ready\ndata: {"tools":["list_invoices","list_plans"],"model_id":"scripted"}\n\n',
+  'event: route\ndata: {"specialist":"billing","tools":["list_invoices"]}\n\n',
   'event: tool_call\ndata: {"name":"list_invoices"}\n\n',
   'event: token\ndata: {"text":"3 invoices, "}\n\n',
   'event: token\ndata: {"text":"1 overdue."}\n\n',
@@ -276,5 +277,18 @@ describe("composer and suggestions", () => {
     expect(screen.queryByText("online")).toBeNull();
     await signIn();
     expect(screen.getByText("online")).toBeInTheDocument();
+  });
+});
+
+
+describe("multi-agent routing", () => {
+  it("shows which specialist handled the turn", async () => {
+    render(<App />);
+    const user = await signIn();
+    await user.type(screen.getByLabelText(/message/i), "show my invoice");
+    await user.click(screen.getByRole("button", { name: /send/i }));
+    await waitFor(() => {
+      expect(screen.getByText("billing agent")).toBeInTheDocument();
+    });
   });
 });

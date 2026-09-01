@@ -79,7 +79,7 @@ session token cannot reach the MCP server (wrong audience, wrong key, minutes to
 ## Streaming
 
 The answer is streamed end to end. The model emits tokens; the agent turns the Strands
-event loop into named SSE events (`ready`, `tool_call`, `token`, `done`); the BFF
+event loop into named SSE events (`ready`, `route`, `tool_call`, `token`, `done`); the BFF
 forwards those frames without buffering; the browser assembles them. The first token
 reaches the user before the turn finishes.
 
@@ -100,5 +100,6 @@ The non-obvious choices are captured as ADRs in `docs/adr/`:
 - [ADR-0004](adr/0004-scripted-model-baseline.md) — a deterministic model as the eval baseline
 - [ADR-0005](adr/0005-k3s-demo-aws-target.md) — k3s for the demo, AWS as the production target
 - [ADR-0006](adr/0006-rag-embedder-seam.md) — retrieval with a pluggable embedder
+- [ADR-0007](adr/0007-a2a-triage-specialists.md) — agent-to-agent triage and specialists
 
 See also `SECURITY.md`, `OBSERVABILITY.md`, `DEPLOY.md` and `RISKS.md`.
